@@ -39,7 +39,7 @@ use yii\helpers\ArrayHelper;
  * so that the provider knows which columns can be sorted.
  *
  * @author Philip Verbist <philip.verbist@gmail.com>
- * @link https://github.com/verbi/yii2-extended-activerecord/
+ * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
  */
 class IteratorActiveDataProvider extends \yii\data\BaseDataProvider

@@ -7,7 +7,7 @@ use unclead\widgets\renderers\TableRenderer;
 
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
- * @link https://github.com/verbi/yii2-extended-activerecord/
+ * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class MultipleInput extends \unclead\widgets\MultipleInput

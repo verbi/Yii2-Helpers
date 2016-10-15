@@ -1,6 +1,6 @@
 <?php
 namespace verbi\yii2Helpers\behaviors\base\models;
-use verbi\yii2ExtendedActiveRecord\db\XActiveRecord;
+use verbi\yii2ExtendedActiveRecord\db\ActiveRecord;
 
 /* 
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -42,7 +42,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     
     public function events() {
         return [
-            XActiveRecord::EVENT_AFTER_SETATTRIBUTES => 'afterSetAttributes',
+            ActiveRecord::EVENT_AFTER_SETATTRIBUTES => 'afterSetAttributes',
         ];
     }
     

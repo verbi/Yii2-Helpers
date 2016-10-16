@@ -15,17 +15,17 @@
 	},
         "requires": [
           {
-              "npm-asset/bootpag": "*",
-              "bower-asset/jquery.lazyload": "*",
-              "bower-asset/dropzone": "*",
-              "kartik-v/yii2-helpers": "*",
-              "kartik-v/yii2-detail-view": "*",
-              "kartik-v/yii2-editable": "*",
-              "kartik-v/yii2-money": "*",
-              "kartik-v/yii2-slider": "*",
-              "akavov/yii2-bootstrap-tokenfield": "*",
-              "borales/yii2-phone-input": "*",
-              "drsdre/yii2-wizardwidget": "*",
+              "npm-asset/bootpag": "dev-master",
+              "bower-asset/jquery.lazyload": "dev-master",
+              "bower-asset/dropzone": "dev-master",
+              "kartik-v/yii2-helpers": "dev-master",
+              "kartik-v/yii2-detail-view": "dev-master",
+              "kartik-v/yii2-editable": "dev-master",
+              "kartik-v/yii2-money": "dev-master",
+              "kartik-v/yii2-slider": "dev-master",
+              "akavov/yii2-bootstrap-tokenfield": "dev-master",
+              "borales/yii2-phone-input": "dev-master",
+              "drsdre/yii2-wizardwidget": "dev-master",
               "unclead/yii2-multiple-input": "~1.0"
           }  
         ],

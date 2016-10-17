@@ -13,8 +13,7 @@
 	"support": {
 		"source": "https://github.com/verbi/yii2-helpers"
 	},
-        "requires": [
-          {
+        "require": {
               "verbi/yii2-extended-activerecord": "*",
               "npm-asset/bootpag": "*",
               "bower-asset/jquery.lazyload": "*",
@@ -28,8 +27,7 @@
               "borales/yii2-phone-input": "*",
               "drsdre/yii2-wizardwidget": "*",
               "unclead/yii2-multiple-input": "~1.0"
-          }  
-        ],
+        },
         "extra": {
             "bootstrap": "verbi\\yii2Helpers\\Bootstrap"
         },

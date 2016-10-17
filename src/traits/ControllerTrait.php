@@ -8,7 +8,7 @@ use \yii\web\BadRequestHttpException;
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
  */
-trait controllerTrait {
+trait ControllerTrait {
 
     public function createAction($id) {
         $action = parent::createAction($id);

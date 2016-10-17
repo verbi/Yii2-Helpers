@@ -15,6 +15,7 @@
 	},
         "requires": [
           {
+              "verbi/yii2-extended-activerecord": "*",
               "npm-asset/bootpag": "*",
               "bower-asset/jquery.lazyload": "*",
               "bower-asset/dropzone": "*",

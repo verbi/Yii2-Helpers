@@ -25,7 +25,7 @@ class TypeValidator extends Validator
     {
         parent::init();
         if ($this->message === null) {
-            $this->message = Yii::t('yii', '{attribute} must be of type "{requiredType}".');
+            $this->message = \Yii::t('yii', '{attribute} must be of type "{requiredType}".');
         }
     }
     

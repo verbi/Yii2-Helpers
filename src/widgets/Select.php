@@ -52,10 +52,22 @@ class Select extends Select2 {
         $this->registerPlugin($this->pluginName, "jQuery('#{$id}')", "initS2Loading('{$id}','{$this->_s2OptionsVar}')");
     }
     
+    protected function getPluginOptions($name) {
+        $this->hashPluginOptions($name);
+        $encOptions = empty($this->_encOptions) ? '{}' : $this->_encOptions;
+        return $encOptions;
+    }
+    
     protected function registerPluginOptions($name)
     {
         $this->hashPluginOptions($name);
-        $encOptions = empty($this->_encOptions) ? '{}' : $this->_encOptions;
-        $this->registerWidgetJs("var {$this->_hashVar} = {$encOptions};\n", View::POS_READY);
     }
+    
+    protected function getPluginScript($name, $element = null, $callback = null, $callbackCon = null)
+    {
+        $script = parent::getPluginScript($name, $element, $callback, $callbackCon);
+        $encOptions = $this->getPluginOptions($name);
+        return "var {$this->_hashVar} = {$encOptions};\n".$script;
+    }
+    
 }

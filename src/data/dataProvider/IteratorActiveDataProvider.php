@@ -44,6 +44,7 @@ use yii\helpers\ArrayHelper;
  */
 class IteratorActiveDataProvider extends \yii\data\BaseDataProvider
 {
+    use \verbi\yii2Helpers\traits\ComponentTrait;
     /**
      * @var string|callable the column that is used as the key of the data models.
      * This can be either a column name, or a callable that returns the key value of a given data model.
@@ -65,12 +66,6 @@ class IteratorActiveDataProvider extends \yii\data\BaseDataProvider
      * is not countable, this value will be ignored.
      */
     public $totalCount;
-    
-    public function behaviors() {
-        return array_merge(parent::behaviors(), [
-            \verbi\yii2Helpers\behaviors\base\ComponentBehavior::className(),
-        ]);
-    }
     
     /**
      * @inheritdoc

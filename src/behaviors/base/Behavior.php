@@ -7,9 +7,13 @@ namespace verbi\yii2Helpers\behaviors\base;
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class Behavior extends \yii\base\Behavior {
-    public function behaviors() {
-        return array_merge(parent::behaviors(), [
-            \verbi\yii2Helpers\behaviors\base\ComponentBehavior::className(),
-        ]);
+    use \verbi\yii2Helpers\traits\ComponentTrait;
+    
+    public function attach($owner)
+    {
+        $this->owner = $owner;
+        foreach ($this->events() as $event => $handler) {
+            $owner->on($event, is_string($handler) ? [$this, $handler] : $handler);
+        }
     }
 }

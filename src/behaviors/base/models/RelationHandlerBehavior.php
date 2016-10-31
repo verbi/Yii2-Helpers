@@ -17,10 +17,6 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                 if(isset($this->_relations[$name])) {
                     return $this->_relations[$name];
                 }
-                if($relation->multiple) {
-                    return $relation->all();
-                }
-                return $relation->one();
             }
         }
         return parent::__get($name);

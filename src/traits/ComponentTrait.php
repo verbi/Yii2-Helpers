@@ -2,6 +2,8 @@
 namespace verbi\yii2Helpers\traits;
 use \yii\web\BadRequestHttpException;
 
+use yii\base\UnknownPropertyException;
+use yii\base\InvalidCallException;
 
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -27,7 +29,10 @@ trait ComponentTrait {
                         }
                     }
                     catch(\Exception $e) {
-
+                        if(!$e instanceof UnknownPropertyException
+                                && !$e instanceof InvalidCallException) {
+                            return $e;
+                        }
                     }
                 }
             }
@@ -52,7 +57,10 @@ trait ComponentTrait {
                         $sw = false;
                     }
                     catch(\Exception $e) {
-
+                        if(!$e instanceof UnknownPropertyException
+                                && !$e instanceof InvalidCallException) {
+                            return $e;
+                        }
                     }
                 }
             }

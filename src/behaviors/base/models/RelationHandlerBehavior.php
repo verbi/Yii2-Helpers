@@ -13,35 +13,33 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     public function __get($name) {
         if($this->owner) {
             $relation = $this->owner->getRelation($name, false);
-            if($relation) {
+            if($relation instanceof \yii\db\ActiveQueryInterface) {
                 if(isset($this->_relations[$name])) {
                     return $this->_relations[$name];
                 }
-                return null;
+                if($relation->multiple) {
+                    return $relation->all();
+                }
+                return $relation->one();
             }
         }
         return parent::__get($name);
     }
     
     public function __set($name, $value) {
-        if($this->owner)
-        {
+        if($this->owner) {
             $relation = $this->owner->getRelation($name, false);
             if($relation instanceof \yii\db\ActiveQueryInterface) {
                 if(is_array($value)) {
                     $relationClassName = $relation->modelClass;
                     if($relation->multiple) {
-                        $this->_relations[$name] = array_map(
-                            function(&$var) {
-                                if(is_array($var)){
-                                    $relationModel = new $relationClassName();
-                                    $relationModel->setAttributes($var);
-                                    return $relationModel;
-                                }
-                                return $var;
-                            },
-                            $value
-                        );
+                        $models = [];
+                        foreach($value as $var) {
+                            $relationModel = new $relationClassName();
+                            $relationModel->setAttributes($var);
+                            $models[] = $relationModel;
+                        }
+                        $this->_relations[$name] = $models;
                         return;
                     }
                     else {

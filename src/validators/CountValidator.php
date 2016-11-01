@@ -1,0 +1,48 @@
+<?php
+namespace verbi\yii2Helpers\validators;
+use Yii;
+
+/*
+ * @author Philip Verbist <philip.verbist@gmail.com>
+ * @link https://github.com/verbi/Yii2-Helpers/
+ * @license https://opensource.org/licenses/GPL-3.0
+*/
+class CountValidator extends Validator
+{
+    public $min = 0;
+    
+    public $max;
+    
+    /**
+     * @var string the user-defined error message. It may contain the following placeholders which
+     * will be replaced accordingly by the validator:
+     *
+     * - `{attribute}`: the label of the attribute being validated
+     * - `{value}`: the value of the attribute being validated
+     */
+    public $message;
+    /**
+     * @inheritdoc
+     */
+    public function init()
+    {
+        parent::init();
+        if ($this->message === null) {
+                $this->message = Yii::t('yii', '{attribute} should have at least {min} and at most {max} elements.');
+        }
+    }
+    
+    /**
+     * @inheritdoc
+     */
+    protected function validateValue($value)
+    {
+            if(sizeof($value) < $this->min || sizeof($value) > $this->max) {
+                return [$this->message, [
+                    'min' => $this->min,
+                    'max' => $this->max,
+                ]];
+            }
+            return null;
+    }
+}

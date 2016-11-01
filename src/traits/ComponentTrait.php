@@ -20,25 +20,28 @@ trait ComponentTrait {
             return parent::__get($name);
         }
         catch(\Exception $exception) {
-            if($this->hasMethod('getBehaviors')) {
-                foreach($this->getBehaviors() as $behavior) {
-                    try {
-                        $value = $behavior->__get($name);
-                        if($value) {
-                            return $value;
+            if($exception instanceof UnknownPropertyException
+                    || $exception instanceof InvalidCallException) {
+                if($this->hasMethod('getBehaviors')) {
+                    foreach($this->getBehaviors() as $behavior) {
+                        try {
+                            $value = $behavior->__get($name);
+                            if($value) {
+                                return $value;
+                            }
                         }
-                    }
-                    catch(\Exception $e) {
-                        if(!$e instanceof UnknownPropertyException
-                                && !$e instanceof InvalidCallException) {
-                            return $e;
+                        catch(\Exception $e) {
+                            if(!$e instanceof UnknownPropertyException
+                                    && !$e instanceof InvalidCallException) {
+                                throw $e;
+                            }
                         }
                     }
                 }
             }
             throw $exception;
+            }
         }
-    }
     
     /**
      * @inheritdoc
@@ -50,16 +53,19 @@ trait ComponentTrait {
             parent::__set($name, $value);
         } catch (\Exception $exception) {
             $sw = true;
-            if($this->hasMethod('getBehaviors')) {
-                foreach($this->getBehaviors() as $behavior) {
-                    try {
-                        $behavior->__set($name, $value);
-                        $sw = false;
-                    }
-                    catch(\Exception $e) {
-                        if(!$e instanceof UnknownPropertyException
-                                && !$e instanceof InvalidCallException) {
-                            return $e;
+            if($exception instanceof UnknownPropertyException
+                    || $exception instanceof InvalidCallException) {
+                if($this->hasMethod('getBehaviors')) {
+                    foreach($this->getBehaviors() as $behavior) {
+                        try {
+                            $behavior->__set($name, $value);
+                            $sw = false;
+                        }
+                        catch(\Exception $e) {
+                            if(!$e instanceof UnknownPropertyException
+                                    && !$e instanceof InvalidCallException) {
+                                return $e;
+                            }
                         }
                     }
                 }
@@ -114,25 +120,48 @@ trait ComponentTrait {
     }
     
     public function getMethods() {
-        $methods = get_class_methods($this->owner);
-        
-        foreach ($this->owner->getBehaviors() as $behavior) {
-            if($behavior!==$this && $behavior->hasMethod('getMethods')) {
-                $methods = array_merge($behavior->getMethods(),$methods);
-            }
-            else {
-                $methods = array_merge(get_class_methods($behavior),$methods);
+        $methods = get_class_methods($this);
+        if(method_exists($this, 'getBehaviors')) {
+            foreach ($this->getBehaviors() as $behavior) {
+                if($behavior->hasMethod('getMethods')) {
+                    $methods = array_merge($behavior->getMethods(),$methods);
+                }
+                else {
+                    $methods = array_merge(get_class_methods($behavior),$methods);
+                }
             }
         }
         return $methods;
     }
     
+    public function hasMethod($name, $checkPublic = false) {
+        if(parent::hasMethod($name)) {
+            if(!$checkPublic || $this->isPublicMethod($name)) {
+                return true;
+            }
+            return false;
+        }
+        if(method_exists($this, 'getBehaviors')) {
+            foreach ($this->getBehaviors() as $behavior) {
+                if($behavior->hasMethod($name, true)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    public function isPublicMethod($name) {
+        $reflect = new \ReflectionClass($this);
+        return $reflect->getMethod($name)->isPublic();
+    }
+    
     public function getReflectionMethod($name, $checkBehaviors = true) {
-        if (method_exists($this->owner, $name)) {
-            return new \ReflectionMethod($this->owner, $name);
+        if (method_exists($this, $name)) {
+            return new \ReflectionMethod($this, $name);
         } elseif ($checkBehaviors) {
-            $this->owner->ensureBehaviors();
-            foreach ($this->owner->getBehaviors() as $behavior) {
+            $this->ensureBehaviors();
+            foreach ($this->getBehaviors() as $behavior) {
                 if ($behavior->hasMethod($name) ) {
                     if($behavior->hasMethod('getReflectionMethod')) {
                         return $behavior->getReflectionMethod($name, $checkBehaviors);
@@ -148,7 +177,7 @@ trait ComponentTrait {
     
     public function getBehaviorByClass($className) {
         return array_filter(
-                $this->owner->getBehaviors(),
+                $this->getBehaviors(),
                 function ($e) use (&$className) {
                     return $e instanceof $className;
                 }
@@ -156,6 +185,6 @@ trait ComponentTrait {
     }
     
     public function hasBehaviorByClass($className) {
-        return $this->owner->getBehaviorByClass($className)?true:false;
+        return $this->getBehaviorByClass($className)?true:false;
     }
 }

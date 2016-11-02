@@ -2,14 +2,11 @@
 
 namespace verbi\yii2Helpers\behaviors\base\models;
 
-use verbi\yii2ExtendedActiveRecord\db\ActiveRecord;
-
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
  */
-
 class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior {
     protected $_relations = [];
 
@@ -27,8 +24,8 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
         if ($this->owner) {
             $relation = $this->_getRelation($name);
             if ($relation) {
-                if (isset($this->owner->_relations[$name])) {
-                    return $this->owner->_relations[$name];
+                if (isset($this->owner->_related[$name])) {
+                    return $this->owner->_related[$name];
                 }
             }
         }
@@ -54,7 +51,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     }
 
     protected function _getRelation($name) {
-        if (!array_key_exists($this->_relations[$name])) {
+        if (!array_key_exists($name,$this->_relations)) {
             $relation = $this->owner->getRelation($name, false);
             if ($relation instanceof \yii\db\ActiveQueryInterface) {
                 $this->_relations[$name] = $relation;
@@ -79,16 +76,16 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                             $relationModel->setAttributes($var);
                             $models[] = $relationModel;
                         }
-                        $this->owner->_relations[$name] = $models;
+                        $this->owner->_related[$name] = $models;
                         return;
                     } else {
                         $relationModel = new $relationClassName();
                         $relationModel->setAttributes($value);
-                        $this->owner->_relations[$name] = $relationModel;
+                        $this->owner->_related[$name] = $relationModel;
                         return;
                     }
                 }
-                $this->owner->_relations[$name] = $value;
+                $this->owner->_related[$name] = $value;
                 return;
             }
         }
@@ -99,7 +96,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             return true;
         }
          if (strpos($name,'set')===0 && $this->owner) {
-            $relation = $this->_getRelation(strtolower(substr($name,3)));
+           $relation = $this->_getRelation(strtolower(substr($name,3)));
             if ($relation) {
                 return true;
             }

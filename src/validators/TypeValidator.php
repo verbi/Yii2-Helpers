@@ -14,11 +14,6 @@ class TypeValidator extends Validator
     public $requiredType;
     
     /**
-     * @var bool Whether the validator should validate a collection of items
-     */
-    public $multiple = false;
-    
-    /**
      * @var string the user-defined error message. It may contain the following placeholders which
      * will be replaced accordingly by the validator:
      *
@@ -38,22 +33,7 @@ class TypeValidator extends Validator
             $this->message = \Yii::t('yii', '{attribute} must be of type "{requiredType}, but is of type {valueType}".');
         }
     }
-    
-    /**
-     * Checks whether to validate a collection of items
-     * @return bool
-     */
-    public function getMultiple() {
-        return $this->multiple;
-    }
-    
-    /**
-     * Sets hether to validate a collection of items
-     * @param bool $value
-     */
-    public function setMultiple(bool $value) {
-        $this->multiple = $value;
-    }
+
     
     /**
      * @inheritdoc
@@ -62,19 +42,7 @@ class TypeValidator extends Validator
     {
         if ($this->requiredType === null) {
             return null;
-        } elseif (!$this->getMultiple()
-                && (gettype($value) == $this->requiredType || $value instanceof $this->requiredType)) {
-            return null;
-        }
-        elseif ($this->getMultiple() && (is_array($value) || $value instanceof \Traversable)) {
-            foreach($value as $item) {
-                if(gettype($item) != $this->requiredType && !$item instanceof $this->requiredType) {
-                    return [$this->message, [
-                        'requiredType' => $this->requiredType,
-                        'valueType' => gettype($item),
-                    ]];
-                }
-            }
+        } elseif (gettype($value) == $this->requiredType || $value instanceof $this->requiredType) {
             return null;
         }
         return [$this->message, [

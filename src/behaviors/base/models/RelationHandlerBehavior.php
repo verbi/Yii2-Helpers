@@ -2,6 +2,8 @@
 
 namespace verbi\yii2Helpers\behaviors\base\models;
 
+use yii\db\ActiveRecordInterface;
+
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
  * @link https://github.com/verbi/Yii2-Helpers/
@@ -125,15 +127,19 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                             $relationModel->setAttributes($var);
                             $this->_softLinked[$name][] = $relationModel;
                         }
+                        $this->_softLinked[$name] = $this->arrayFilterUniqueActiveRecord($this->_softLinked[$name]);
+                        $this->_cleanupSoftDeleteRelated($name);
                         return;
                     } else {
                         $relationModel = new $relationClassName();
                         $relationModel->setAttributes($value);
                         $this->_softLinked[$name] = $relationModel;
+                        $this->_cleanupSoftDeleteRelated($name);
                         return;
                     }
                 }
                 $this->_softLinked[$name] = $value;
+                $this->_cleanupSoftDeleteRelated($name);
                 return;
             }
         }
@@ -142,16 +148,31 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     public function softUnlink($name, $model, $delete = false) {
         if ($this->owner) {
             $relation = $this->_getRelation($name);
-            
+
             if ($relation) {
                 if ($delete) {
                     $this->softDeleteRelated($name, $model);
                 }
+                if (!isset($this->_softLinked[$name])) {
+                    $this->_softLinked[$name] = $this->owner->$name;
+                }
                 if ($relation->multiple) {
-                    $this->_softLinked[$name] = [];
+                    $this->_softLinked[$name] = array_filter(
+                            $this->_softLinked[$name], function($obj) use ($model) {
+                        if ( $model instanceof ActiveRecordInterface
+                                && $obj instanceof ActiveRecordInterface
+                                && ($obj == $model
+                                || ( !$model->getIsNewRecord()
+                                        && !$obj->getIsNewRecord()
+                                        && $obj->getPrimaryKey() == $model->getPrimaryKey()
+                                        ) ) ) {
+                            return false;
+                        }
+                        return true;
+                    }
+                    );
                     return;
                 }
-                
             }
         }
     }
@@ -159,7 +180,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     public function softUnlinkAll($name, $delete = false) {
         if ($this->owner) {
             $relation = $this->_getRelation($name);
-            
+
             if ($relation) {
                 if ($delete) {
                     $this->softDeleteRelated($name);
@@ -199,7 +220,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                     } else {
                         if (is_array($value)) {
                             foreach ($value as $item) {
-                                if ($item instanceof \yii\db\ActiveRecordInterface && !$item->getIsNewRecord()) {
+                                if ($item instanceof ActiveRecordInterface && !$item->getIsNewRecord()) {
                                     $this->_softDeleted[$name][] = $item;
                                 }
                             }
@@ -209,7 +230,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                     return;
                 }
 
-                if (isset($value) && $value instanceof \yii\db\ActiveRecordInterface && !$value->getIsNewRecord()) {
+                if (isset($value) && $value instanceof ActiveRecordInterface && !$value->getIsNewRecord()) {
                     $this->_softDeleted[$name][] = $value;
                     $this->_softDeleted[$name] = $this->arrayFilterUniqueActiveRecord($this->_softDeleted[$name]);
                     return;
@@ -218,4 +239,37 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
         }
     }
 
+    
+    protected function _cleanupSoftDeleteRelated($name, $value = null) {
+        if($value == null) {
+            $value = $this->owner->$name;
+        }
+        if(isset($this->_softDeleted[$name]) && is_array($this->_softDeleted[$name])) {
+            $this->_softDeleted[$name] = array_filter($this->_softDeleted[$name], function($obj) use ($value){
+                if(is_array($value)) {
+                    foreach($value as $model) {
+                        if ( $model instanceof ActiveRecordInterface
+                                && $obj instanceof ActiveRecordInterface
+                                && ($obj == $model
+                                || ( !$model->getIsNewRecord()
+                                        && !$obj->getIsNewRecord()
+                                        && $obj->getPrimaryKey() == $model->getPrimaryKey()
+                                        ) ) ) {
+                            return false;
+                        }
+                    }
+                }
+                if( $value instanceof ActiveRecordInterface
+                                && $obj instanceof ActiveRecordInterface && ($obj == $model
+                                || ( !$value->getIsNewRecord()
+                                        && !$obj->getIsNewRecord()
+                                        && $obj->getPrimaryKey() == $value->getPrimaryKey()
+                                        ) )) {
+                    return false;
+                }
+                return true;
+            });
+        }
+        
+    }
 }

@@ -18,9 +18,9 @@ class MultipleInput extends \unclead\widgets\MultipleInput {
     public static function widget($options = []) {
         $options = array_merge([
             'limit' => 6,
-            'allowEmptyList' => false,
+            'allowEmptyList' => true,
             'enableGuessTitle' => true,
-            'min' => 1, // should be at least 2 rows
+            'min' => 0,
             'addButtonPosition' => MultipleInput::POS_HEADER // show add button in the header
                 ], $options);
         return parent::widget($options);

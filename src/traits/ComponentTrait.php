@@ -1,9 +1,10 @@
 <?php
+
 namespace verbi\yii2Helpers\traits;
-use \yii\web\BadRequestHttpException;
 
 use yii\base\UnknownPropertyException;
 use yii\base\InvalidCallException;
+use verbi\yii2Helpers\events\GeneralFunctionEvent;
 
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -11,28 +12,31 @@ use yii\base\InvalidCallException;
  * @license https://opensource.org/licenses/GPL-3.0
  */
 trait ComponentTrait {
+
+    static $EVENT_BEFORE_MAGIC_GET = '_beforeMagicGet';
+    static $EVENT_BEFORE_MAGIC_SET = '_beforeMagicSet';
+
     /**
      * @inheritdoc
      */
-    public function __get($name)
-    {
+    public function __get($name) {
+        $_beforeMagicGet = $this->_beforeMagicGet($name);
+        if (is_array($_beforeMagicGet) && $_beforeMagicGet['hasReturnValue']) {
+            return $_beforeMagicGet['returnValue'];
+        }
         try {
             return parent::__get($name);
-        }
-        catch(\Exception $exception) {
-            if($exception instanceof UnknownPropertyException
-                    || $exception instanceof InvalidCallException) {
-                if($this->hasMethod('getBehaviors')) {
-                    foreach($this->getBehaviors() as $behavior) {
+        } catch (\Exception $exception) {
+            if ($exception instanceof UnknownPropertyException || $exception instanceof InvalidCallException) {
+                if ($this->hasMethod('getBehaviors')) {
+                    foreach ($this->getBehaviors() as $behavior) {
                         try {
                             $value = $behavior->__get($name);
-                            if($value) {
+                            if ($value) {
                                 return $value;
                             }
-                        }
-                        catch(\Exception $e) {
-                            if(!$e instanceof UnknownPropertyException
-                                    && !$e instanceof InvalidCallException) {
+                        } catch (\Exception $e) {
+                            if (!$e instanceof UnknownPropertyException && !$e instanceof InvalidCallException) {
                                 throw $e;
                             }
                         }
@@ -40,51 +44,74 @@ trait ComponentTrait {
                 }
             }
             throw $exception;
-            }
         }
-    
+    }
+
+    protected function _beforeMagicGet($name) {
+        if ($this->hasMethod('trigger')) {
+            $event = new GeneralFunctionEvent([
+                'params' => [
+                    'name' => $name,
+                ],
+            ]);
+            $this->trigger(self::$EVENT_BEFORE_MAGIC_GET, $event);
+            return [
+                'hasReturnValue' => $event->hasReturnValue(),
+                'returnValue' => $event->getReturnValue(),
+            ];
+        }
+        return null;
+    }
+
     /**
      * @inheritdoc
      */
-    public function __set($name, $value)
-    {
+    public function __set($name, $value) {
         $exception = null;
         try {
             parent::__set($name, $value);
         } catch (\Exception $exception) {
             $sw = true;
-            if($exception instanceof UnknownPropertyException
-                    || $exception instanceof InvalidCallException) {
-                if($this->hasMethod('getBehaviors')) {
-                    foreach($this->getBehaviors() as $behavior) {
+            if ($exception instanceof UnknownPropertyException || $exception instanceof InvalidCallException) {
+                if ($this->hasMethod('getBehaviors')) {
+                    foreach ($this->getBehaviors() as $behavior) {
                         try {
                             $behavior->__set($name, $value);
                             $sw = false;
-                        }
-                        catch(\Exception $e) {
-                            if(!$e instanceof UnknownPropertyException
-                                    && !$e instanceof InvalidCallException) {
+                        } catch (\Exception $e) {
+                            if (!$e instanceof UnknownPropertyException && !$e instanceof InvalidCallException) {
                                 return $e;
                             }
                         }
                     }
                 }
             }
-            if($sw) { 
+            if ($sw) {
                 throw $exception;
             }
         }
     }
-    
+
+    protected function _beforeMagicSet($name, $value) {
+        if ($this->hasMethod('trigger')) {
+            $event = new GeneralFunctionEvent([
+                'params' => [
+                    'name' => $name,
+                    'value' => $value,
+                ],
+            ]);
+            $this->trigger(self::$EVENT_BEFORE_MAGIC_SET, $event);
+        }
+    }
+
     /**
      * @inheritdoc
      */
-    public function canGetProperty($name, $checkVars = true, $checkBehaviors = true)
-    {
+    public function canGetProperty($name, $checkVars = true, $checkBehaviors = true) {
         if (method_exists($this, 'get' . $name) || $checkVars && property_exists($this, $name) && $this->isPublicProperty($name)) {
             return true;
         } elseif ($checkBehaviors) {
-            if($this->hasMethod('getBehaviors')) {
+            if ($this->hasMethod('getBehaviors')) {
                 foreach ($this->getBehaviors() as $behavior) {
                     if ($behavior->canGetProperty($name, $checkVars)) {
                         return true;
@@ -94,16 +121,15 @@ trait ComponentTrait {
         }
         return false;
     }
-    
+
     /**
      * @inheritdoc
      */
-    public function canSetProperty($name, $checkVars = true, $checkBehaviors = true)
-    {
+    public function canSetProperty($name, $checkVars = true, $checkBehaviors = true) {
         if (method_exists($this, 'set' . $name) || $checkVars && property_exists($this, $name) && $this->isPublicProperty($name)) {
             return true;
         } elseif ($checkBehaviors) {
-            if($this->hasMethod('getBehaviors')) {
+            if ($this->hasMethod('getBehaviors')) {
                 foreach ($this->getBehaviors() as $behavior) {
                     if ($behavior->canSetProperty($name, $checkVars)) {
                         return true;
@@ -113,60 +139,58 @@ trait ComponentTrait {
         }
         return false;
     }
-    
+
     public function isPublicProperty($name) {
         $reflect = new \ReflectionClass($this);
         return $reflect->getProperty($name)->isPublic();
     }
-    
+
     public function getMethods() {
         $methods = get_class_methods($this);
-        if(method_exists($this, 'getBehaviors')) {
+        if (method_exists($this, 'getBehaviors')) {
             foreach ($this->getBehaviors() as $behavior) {
-                if($behavior->hasMethod('getMethods')) {
-                    $methods = array_merge($behavior->getMethods(),$methods);
-                }
-                else {
-                    $methods = array_merge(get_class_methods($behavior),$methods);
+                if ($behavior->hasMethod('getMethods')) {
+                    $methods = array_merge($behavior->getMethods(), $methods);
+                } else {
+                    $methods = array_merge(get_class_methods($behavior), $methods);
                 }
             }
         }
         return $methods;
     }
-    
+
     public function hasMethod($name, $checkPublic = false) {
-        if(parent::hasMethod($name)) {
-            if(!$checkPublic || $this->isPublicMethod($name)) {
+        if (parent::hasMethod($name)) {
+            if (!$checkPublic || $this->isPublicMethod($name)) {
                 return true;
             }
             return false;
         }
-        if(method_exists($this, 'getBehaviors')) {
+        if (method_exists($this, 'getBehaviors')) {
             foreach ($this->getBehaviors() as $behavior) {
-                if($behavior->hasMethod($name, true)) {
+                if ($behavior->hasMethod($name, true)) {
                     return true;
                 }
             }
         }
         return false;
     }
-    
+
     public function isPublicMethod($name) {
         $reflect = new \ReflectionClass($this);
         return $reflect->getMethod($name)->isPublic();
     }
-    
+
     public function getReflectionMethod($name, $checkBehaviors = true) {
         if (method_exists($this, $name)) {
             return new \ReflectionMethod($this, $name);
         } elseif ($checkBehaviors) {
             $this->ensureBehaviors();
             foreach ($this->getBehaviors() as $behavior) {
-                if ($behavior->hasMethod($name) ) {
-                    if($behavior->hasMethod('getReflectionMethod')) {
+                if ($behavior->hasMethod($name)) {
+                    if ($behavior->hasMethod('getReflectionMethod')) {
                         return $behavior->getReflectionMethod($name, $checkBehaviors);
-                    }
-                    else {
+                    } else {
                         return new \ReflectionMethod($behavior, $name);
                     }
                 }
@@ -174,17 +198,16 @@ trait ComponentTrait {
         }
         return null;
     }
-    
+
     public function getBehaviorByClass($className) {
         return array_filter(
-                $this->getBehaviors(),
-                function ($e) use (&$className) {
-                    return $e instanceof $className;
-                }
-                );
+                $this->getBehaviors(), function ($e) use (&$className) {
+            return $e instanceof $className;
+        }
+        );
     }
-    
+
     public function hasBehaviorByClass($className) {
-        return $this->getBehaviorByClass($className)?true:false;
+        return $this->getBehaviorByClass($className) ? true : false;
     }
 }

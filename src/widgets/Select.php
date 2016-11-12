@@ -19,6 +19,7 @@ class Select extends Select2 {
                 $config['pluginOptions']['ajax']['headers']['Authorization'] = new JsExpression(
                     '"Bearer " + (new Oauth2(' . json_encode(['siteBaseUrl' => \Yii::$app->homeUrl,]) . ')).getAjaxAccessToken()'
                 );
+                //die(print_r($config,true));
             }
         }
         return parent::widget($config);
@@ -50,5 +51,17 @@ class Select extends Select2 {
             $view->registerJs("initS2Order('{$id}',{$val});");
         }
         $this->registerPlugin($this->pluginName, "jQuery('#{$id}')", "initS2Loading('{$id}','{$this->_s2OptionsVar}')");
+    }
+
+    /**
+     * Registers plugin options by storing within a uniquely generated javascript variable.
+     *
+     * @param string $name the plugin name
+     */
+    protected function registerPluginOptions($name)
+    {
+        $this->hashPluginOptions($name);
+        $encOptions = empty($this->_encOptions) ? '{}' : $this->_encOptions;
+        $this->registerWidgetJs("var {$this->_hashVar} = {$encOptions};\n", View::POS_READY);
     }
 }

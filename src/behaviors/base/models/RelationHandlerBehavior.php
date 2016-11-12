@@ -3,41 +3,57 @@
 namespace verbi\yii2Helpers\behaviors\base\models;
 
 use yii\db\ActiveRecordInterface;
+use verbi\yii2Helpers\events\GeneralFunctionEvent;
+use yii\db\ActiveQueryInterface;
 
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
  */
-
 class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior {
-
     use \verbi\yii2ExtendedActiveRecord\traits\ActiveRecordTrait;
 
     protected $_relations = [];
-    protected $_softLinked = [];
-    protected $_softDeleted = [];
+    protected $_related = [];
+
+    public function events() {
+        $ownerClass = $this->owner->className();
+        return [
+            $ownerClass::$EVENT_BEFORE_MAGIC_GET => 'beforeMagicGet',
+            $ownerClass::$EVENT_BEFORE_MAGIC_SET => 'beforeMagicSet',
+        ];
+    }
 
     public function __call($name, $params) {
         if ($this->owner && strpos($name, 'set') === 0) {
-            $relation = $this->_getRelation($name);
+            $relation = $this->_getRelation(lcfirst(substr($name, 2)));
             if ($relation) {
                 return $this->_setRelated(lcfirst(substr($name, 3)), array_shift($params));
             }
         }
-        return parent::__call($name, params);
+        return parent::__call($name, $params);
     }
 
     public function __get($name) {
         if ($this->owner) {
             $relation = $this->_getRelation($name);
             if ($relation) {
-                if (array_key_exists($name, $this->owner->_related)) {
-                    return $this->owner->_related[$name];
+                if (array_key_exists($name, $this->_related)) {
+                    return $this->_related[$name];
                 }
             }
         }
         return parent::__get($name);
+    }
+
+    public function beforeMagicGet(GeneralFunctionEvent $event) {
+        try {
+            $event->setReturnValue($this->__get($event->params['name']));
+            $event->handled = true;
+        } catch (\Exception $e) {
+            
+        }
     }
 
     public function __set($name, $value) {
@@ -48,6 +64,15 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             }
         }
         return parent::__set($name, $value);
+    }
+
+    protected function beforeMagicSet(GeneralFunctionEvent $event) {
+        try {
+            $this->__set($event->params['name'], $event->params['value']);
+            $event->handled = true;
+        } catch (\Exception $e) {
+            
+        }
     }
 
     public function __isset($name) {
@@ -74,26 +99,47 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     protected function _setRelated($name, $value) {
         if ($this->owner) {
             $relation = $this->_getRelation($name);
-            if ($relation) {
+            if ($relation instanceof ActiveQueryInterface) {
                 if (is_array($value)) {
                     $relationClassName = $relation->modelClass;
+                    if($relation->via === null) {
+                        $viaRelation = $relation;
+                    }
+                    elseif (is_array($relation->via)) {
+                        /* @var $viaRelation ActiveQuery */
+                        list($viaName, $viaRelation) = $relation->via;
+                        $viaClass = $viaRelation->modelClass;
+                        // unset $viaName so that it can be reloaded to reflect the change
+                        unset($this->_related[$viaName]);
+                    } else {
+                        $viaRelation = $relation->via;
+                        $viaTable = reset($relation->via->from);
+                    }
                     if ($relation->multiple) {
-                        $models = [];
-                        foreach ($value as $var) {
-                            $relationModel = new $relationClassName();
-                            $relationModel->setAttributes($var);
-                            $models[] = $relationModel;
-                        }
-                        $this->owner->_related[$name] = $models;
+                        $models = $value;
+                        array_walk($models, function(&$var) use ($relationClassName, $viaRelation) {
+                            if(is_array($var)) {
+                                $relationModel = new $relationClassName();
+                                $relationModel->setAttributes($var);
+                                array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
+                                    $relationModel->$relationKey = $this->owner->$primaryKey;
+                                });
+                                $var = $relationModel;
+                            }
+                        });
+                        $this->_related[$name] = $models;
                         return;
                     } else {
                         $relationModel = new $relationClassName();
                         $relationModel->setAttributes($value);
-                        $this->owner->_related[$name] = $relationModel;
+                        array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
+                            $relationModel->$relationKey = $this->owner->$primaryKey;
+                        });
+                        $this->_related[$name] = $relationModel;
                         return;
                     }
                 }
-                $this->owner->_related[$name] = $value;
+                $this->_related[$name] = $value;
                 return;
             }
         }
@@ -112,164 +158,31 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
         return false;
     }
 
-    public function softLink($name, $model, $extraColumns = []) {
-        if ($this->owner) {
-            $relation = $this->_getRelation($name);
-            if ($relation) {
-                if (is_array($value)) {
-                    $relationClassName = $relation->modelClass;
-                    if ($relation->multiple) {
-                        if (!isset($this->_softRelated[$name])) {
-                            $this->_softLinked[$name] = $this->owner->$name;
-                        }
-                        foreach ($value as $var) {
-                            $relationModel = new $relationClassName();
-                            $relationModel->setAttributes($var);
-                            $this->_softLinked[$name][] = $relationModel;
-                        }
-                        $this->_softLinked[$name] = $this->arrayFilterUniqueActiveRecord($this->_softLinked[$name]);
-                        $this->_cleanupSoftDeleteRelated($name);
-                        return;
-                    } else {
-                        $relationModel = new $relationClassName();
-                        $relationModel->setAttributes($value);
-                        $this->_softLinked[$name] = $relationModel;
-                        $this->_cleanupSoftDeleteRelated($name);
-                        return;
-                    }
-                }
-                $this->_softLinked[$name] = $value;
-                $this->_cleanupSoftDeleteRelated($name);
-                return;
-            }
-        }
-    }
-
-    public function softUnlink($name, $model, $delete = false) {
-        if ($this->owner) {
-            $relation = $this->_getRelation($name);
-
-            if ($relation) {
-                if ($delete) {
-                    $this->softDeleteRelated($name, $model);
-                }
-                if (!isset($this->_softLinked[$name])) {
-                    $this->_softLinked[$name] = $this->owner->$name;
-                }
-                if ($relation->multiple) {
-                    $this->_softLinked[$name] = array_filter(
-                            $this->_softLinked[$name], function($obj) use ($model) {
-                        if ( $model instanceof ActiveRecordInterface
-                                && $obj instanceof ActiveRecordInterface
-                                && ($obj == $model
-                                || ( !$model->getIsNewRecord()
-                                        && !$obj->getIsNewRecord()
-                                        && $obj->getPrimaryKey() == $model->getPrimaryKey()
-                                        ) ) ) {
-                            return false;
-                        }
-                        return true;
-                    }
-                    );
-                    return;
-                }
-            }
-        }
-    }
-
-    public function softUnlinkAll($name, $delete = false) {
-        if ($this->owner) {
-            $relation = $this->_getRelation($name);
-
-            if ($relation) {
-                if ($delete) {
-                    $this->softDeleteRelated($name);
-                }
-                $relationClassName = $relation->modelClass;
-                if ($relation->multiple) {
-
-                    $this->_softLinked[$name] = [];
-                    return;
-                }
-            }
-
-            $this->_softLinked[$name] = null;
-            return;
-        }
-    }
-
-    public function softDeleteRelated($name, $value = null) {
-        if ($this->owner) {
-            $relation = $this->_getRelation($name);
-            if ($relation) {
-                $relationClassName = $relation->modelClass;
-                if (!isset($this->_softDeleted[$name])) {
-                    $this->_softDeleted[$name] = [];
-                }
-                if (!$value) {
-                    $value = $this->owner->$name;
-                }
-                if ($relation->multiple) {
-
-                    if (!isset($this->_softRelated[$name])) {
-                        if (is_array($value)) {
-                            $this->_softDeleted[$name] = array_merge($this->_softDeleted[$name], $value);
-                        } else {
-                            $this->_softDeleted[$name][] = $value;
-                        }
-                    } else {
-                        if (is_array($value)) {
-                            foreach ($value as $item) {
-                                if ($item instanceof ActiveRecordInterface && !$item->getIsNewRecord()) {
-                                    $this->_softDeleted[$name][] = $item;
-                                }
-                            }
-                        }
-                    }
-                    $this->_softDeleted[$name] = $this->arrayFilterUniqueActiveRecord($this->_softDeleted[$name]);
-                    return;
-                }
-
-                if (isset($value) && $value instanceof ActiveRecordInterface && !$value->getIsNewRecord()) {
-                    $this->_softDeleted[$name][] = $value;
-                    $this->_softDeleted[$name] = $this->arrayFilterUniqueActiveRecord($this->_softDeleted[$name]);
-                    return;
-                }
-            }
-        }
-    }
-
-    
     protected function _cleanupSoftDeleteRelated($name, $value = null) {
-        if($value == null) {
+        if ($value == null) {
             $value = $this->owner->$name;
         }
-        if(isset($this->_softDeleted[$name]) && is_array($this->_softDeleted[$name])) {
-            $this->_softDeleted[$name] = array_filter($this->_softDeleted[$name], function($obj) use ($value){
-                if(is_array($value)) {
-                    foreach($value as $model) {
-                        if ( $model instanceof ActiveRecordInterface
+        if (isset($this->_softDeleted[$name]) && is_array($this->_softDeleted[$name])) {
+            $this->_softDeleted[$name] = array_filter($this->_softDeleted[$name], function($obj) use ($value) {
+                if (is_array($value)) {
+                    foreach ($value as $model) {
+                        if ($model instanceof ActiveRecordInterface
                                 && $obj instanceof ActiveRecordInterface
-                                && ($obj == $model
-                                || ( !$model->getIsNewRecord()
+                                && ($obj == $model || (!$model->getIsNewRecord()
                                         && !$obj->getIsNewRecord()
-                                        && $obj->getPrimaryKey() == $model->getPrimaryKey()
-                                        ) ) ) {
+                                        && $obj->getPrimaryKey(true) == $model->getPrimaryKey(true)
+                                ) )) {
                             return false;
                         }
                     }
                 }
-                if( $value instanceof ActiveRecordInterface
-                                && $obj instanceof ActiveRecordInterface && ($obj == $model
-                                || ( !$value->getIsNewRecord()
-                                        && !$obj->getIsNewRecord()
-                                        && $obj->getPrimaryKey() == $value->getPrimaryKey()
-                                        ) )) {
+                if ($value instanceof ActiveRecordInterface && $obj instanceof ActiveRecordInterface && ($obj == $model || (!$value->getIsNewRecord() && !$obj->getIsNewRecord() && $obj->getPrimaryKey(true) == $value->getPrimaryKey(true)
+                        ) )) {
                     return false;
                 }
                 return true;
             });
         }
-        
     }
+
 }

@@ -5,6 +5,7 @@ namespace verbi\yii2Helpers\behaviors\base\models;
 use yii\db\ActiveRecordInterface;
 use verbi\yii2Helpers\events\GeneralFunctionEvent;
 use yii\db\ActiveQueryInterface;
+use yii\db\AfterSaveEvent;
 
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -22,6 +23,8 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
         return [
             $ownerClass::$EVENT_BEFORE_MAGIC_GET => 'beforeMagicGet',
             $ownerClass::$EVENT_BEFORE_MAGIC_SET => 'beforeMagicSet',
+            $ownerClass::EVENT_AFTER_UPDATE => 'afterSave',
+            $ownerClass::EVENT_AFTER_INSERT => 'afterSave',
         ];
     }
 
@@ -116,25 +119,47 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                         $viaTable = reset($relation->via->from);
                     }
                     if ($relation->multiple) {
+                        $relationModel = new $relationClassName();
+                        $primaryKeyKeys = array_keys($relationModel->getPrimaryKey(true));
+                        //$relation->andWhere('id');
+                        $foundModels = [];
+                        if(!$this->owner->getIsNewRecord()){
+                            $foundModels = $relation->findFor($name, $this->owner);
+                        }
+                        $foundPrimaryKeys = array_map(function($value) {
+                            return $value->getPrimaryKey(true);
+                        }, $foundModels);
                         $models = $value;
-                        array_walk($models, function(&$var) use ($relationClassName, $viaRelation) {
+                        array_walk($models, function(&$var) use ($relationClassName, $viaRelation, &$foundModels, &$foundPrimaryKeys, &$primaryKeyKeys) {
                             if(is_array($var)) {
+                                $searchResult = array_search(array_filter($var, function($key) use (&$primaryKeyKeys) {
+                                    return in_array( $key, $primaryKeyKeys);
+                                },
+                                ARRAY_FILTER_USE_KEY),$foundPrimaryKeys);
                                 $relationModel = new $relationClassName();
+                                if($searchResult !== false){
+                                    $relationModel = $foundModels[$searchResult];
+                                }
+                                else {
+                                    array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
+                                        $relationModel->$relationKey = $this->owner->$primaryKey;
+                                    });
+                                }
                                 $relationModel->setAttributes($var);
-                                array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
-                                    $relationModel->$relationKey = $this->owner->$primaryKey;
-                                });
                                 $var = $relationModel;
                             }
                         });
                         $this->_related[$name] = $models;
                         return;
                     } else {
-                        $relationModel = new $relationClassName();
+                        $relationModel = $relation->findFor($name, $this->owner);
+                        if(!$relationModel) {
+                            $relationModel = new $relationClassName();
+                            array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
+                                $relationModel->$relationKey = $this->owner->$primaryKey;
+                            });
+                        }
                         $relationModel->setAttributes($value);
-                        array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
-                            $relationModel->$relationKey = $this->owner->$primaryKey;
-                        });
                         $this->_related[$name] = $relationModel;
                         return;
                     }
@@ -185,4 +210,28 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
         }
     }
 
+    public function afterSave(AfterSaveEvent $event) {
+        $object = $this;
+        array_walk($this->_related, function(&$related, $name) use ($object) {
+            $relation = $object->_getRelation($name);
+            if($relation->multiple) {
+                if(is_array($related)) {
+                    array_walk($related, function(&$model) use ($object, $name) {
+                        if($model->validate()) {
+                            $object->owner->link($name, $model);
+                            return true;
+                        }
+                        throw new \Exception('Validation error for relation ' . $name . '.');
+                    });
+                }
+            }
+            else {
+                if($related->validate()) {
+                    $object->owner->link($name, $related);
+                    return true;
+                }
+                throw new \Exception('Validation error for relation ' . $name . '.');
+            }
+        });
+    }
 }

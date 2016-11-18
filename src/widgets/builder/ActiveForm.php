@@ -7,6 +7,7 @@ namespace verbi\yii2Helpers\widgets\builder;
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class ActiveForm extends \kartik\widgets\ActiveForm {
+    use \verbi\yii2Helpers\traits\WidgetTrait;
     protected static function prepareOptions($options) {
         $formOptions = [
             'type' => ActiveForm::TYPE_VERTICAL,

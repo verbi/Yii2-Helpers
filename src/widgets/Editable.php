@@ -13,7 +13,7 @@ use yii\widgets\ActiveForm;
  * @license https://opensource.org/licenses/GPL-3.0
  */
 class Editable extends \kartik\editable\Editable {
-    
+    use \verbi\yii2Helpers\traits\WidgetTrait;
     const INPUT_PHONE = '\borales\extensions\phoneInput\PhoneInput';
     const INPUT_RATING = 'verbi\yii2Helpers\widgets\StarRating';
 

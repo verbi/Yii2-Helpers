@@ -12,14 +12,13 @@ use yii\web\View;
  * @license https://opensource.org/licenses/GPL-3.0
  */
 class Select extends Select2 {
-    
+    use \verbi\yii2Helpers\traits\WidgetTrait;
     public static function widget($config = []) {
         if(!\yii::$app->user->isGuest && isset($config['pluginOptions']) && isset($config['pluginOptions']['ajax'])) {
             if(!isset($config['pluginOptions']['ajax']['headers']) && !isset($config['pluginOptions']['ajax']['headers']['Authorization'])) {
                 $config['pluginOptions']['ajax']['headers']['Authorization'] = new JsExpression(
                     '"Bearer " + (new Oauth2(' . json_encode(['siteBaseUrl' => \Yii::$app->homeUrl,]) . ')).getAjaxAccessToken()'
                 );
-                //die(print_r($config,true));
             }
         }
         return parent::widget($config);
@@ -44,24 +43,11 @@ class Select extends Select2 {
         ]);
         $this->_s2OptionsVar = 's2options_' . hash('crc32', $options);
         $this->options['data-s2-options'] = $this->_s2OptionsVar;
-        
         $view->registerJs("var {$this->_s2OptionsVar} = {$options};", View::POS_READY);
         if ($this->maintainOrder) {
             $val = Json::encode(is_array($this->value) ? $this->value : [$this->value]);
             $view->registerJs("initS2Order('{$id}',{$val});");
         }
         $this->registerPlugin($this->pluginName, "jQuery('#{$id}')", "initS2Loading('{$id}','{$this->_s2OptionsVar}')");
-    }
-
-    /**
-     * Registers plugin options by storing within a uniquely generated javascript variable.
-     *
-     * @param string $name the plugin name
-     */
-    protected function registerPluginOptions($name)
-    {
-        $this->hashPluginOptions($name);
-        $encOptions = empty($this->_encOptions) ? '{}' : $this->_encOptions;
-        $this->registerWidgetJs("var {$this->_hashVar} = {$encOptions};\n", View::POS_READY);
     }
 }

@@ -6,5 +6,5 @@ namespace verbi\yii2Helpers\widgets;
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class StarRating extends \kartik\rating\StarRating {
-    
+    use \verbi\yii2Helpers\traits\WidgetTrait;
 }

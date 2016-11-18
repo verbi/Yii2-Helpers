@@ -9,6 +9,7 @@ use yii\web\JsExpression;
  * @license https://opensource.org/licenses/GPL-3.0
  */
 class Typeahead extends \kartik\typeahead\Typeahead {
+    //use \verbi\yii2Helpers\traits\WidgetTrait;
     public static function widget($config = []) {
         if(!\yii::$app->user->isGuest && isset($config['dataset'])) {
             $dataset = [];

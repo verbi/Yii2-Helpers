@@ -216,12 +216,37 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             $relation = $object->_getRelation($name);
             if($relation->multiple) {
                 if(is_array($related)) {
-                    array_walk($related, function(&$model) use ($object, $name) {
+                    $unlinkPks = [];
+                    array_walk($related, function(&$model) use ($object, $name, &$unlinkPks) {
                         if($model->validate()) {
                             $object->owner->link($name, $model);
+                            $unlinkPks[] = implode(',',$model->getPrimaryKey(true));
                             return true;
                         }
                         throw new \Exception('Validation error for relation ' . $name . '.');
+                    });
+                    if(sizeof($unlinkPks)) {
+                        $relation->andWhere([
+                            'not in',
+                            '('
+                            . implode( ',',
+                                    array_keys($relation->primaryModel->getPrimaryKey(true))
+                                )
+                            . ')',
+                            $unlinkPks,
+                            ]);
+                    }
+                    $unlinkRelations = $relation->findFor($name, $object->owner);
+                    array_walk($unlinkRelations, function($model) use ($name, $object) {
+                             $delete = false;
+                            if(!$relation->via) {
+                                foreach($relation->link as $fk => $pk) {
+                                    if($model->isAttributeRequired($fk)) {
+                                        $delete = true;
+                                    }
+                                }
+                            }
+                            return $object->owner->unlink($name, $model, $delete);
                     });
                 }
             }

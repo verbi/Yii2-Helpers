@@ -12,7 +12,9 @@ use yii\db\AfterSaveEvent;
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
  */
+
 class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior {
+
     use \verbi\yii2ExtendedActiveRecord\traits\ActiveRecordTrait;
 
     protected $_relations = [];
@@ -105,10 +107,9 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             if ($relation instanceof ActiveQueryInterface) {
                 if (is_array($value)) {
                     $relationClassName = $relation->modelClass;
-                    if($relation->via === null) {
+                    if ($relation->via === null) {
                         $viaRelation = $relation;
-                    }
-                    elseif (is_array($relation->via)) {
+                    } elseif (is_array($relation->via)) {
                         /* @var $viaRelation ActiveQuery */
                         list($viaName, $viaRelation) = $relation->via;
                         $viaClass = $viaRelation->modelClass;
@@ -123,7 +124,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                         $primaryKeyKeys = array_keys($relationModel->getPrimaryKey(true));
                         //$relation->andWhere('id');
                         $foundModels = [];
-                        if(!$this->owner->getIsNewRecord()){
+                        if (!$this->owner->getIsNewRecord()) {
                             $foundModels = $relation->findFor($name, $this->owner);
                         }
                         $foundPrimaryKeys = array_map(function($value) {
@@ -131,21 +132,45 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                         }, $foundModels);
                         $models = $value;
                         array_walk($models, function(&$var) use ($relationClassName, $viaRelation, &$foundModels, &$foundPrimaryKeys, &$primaryKeyKeys) {
-                            if(is_array($var)) {
-                                $searchResult = array_search(array_filter($var, function($key) use (&$primaryKeyKeys) {
-                                    return in_array( $key, $primaryKeyKeys);
-                                },
-                                ARRAY_FILTER_USE_KEY),$foundPrimaryKeys);
-                                $relationModel = new $relationClassName();
-                                if($searchResult !== false){
-                                    $relationModel = $foundModels[$searchResult];
-                                }
-                                else {
+                            if(is_array($var) || !is_object($var)) {
+                                
+                                    $relationModel = new $relationClassName();
+                                if (is_array($var)) {
+                                    $searchResult = array_search(array_filter($var, function($key) use (&$primaryKeyKeys) {
+                                                return in_array($key, $primaryKeyKeys);
+                                            }, ARRAY_FILTER_USE_KEY), $foundPrimaryKeys);
+                                    if ($searchResult !== false) {
+                                        $relationModel = $foundModels[$searchResult];
+                                    } else {
+                                        array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
+                                            $relationModel->$relationKey = $this->owner->$primaryKey;
+                                        });
+                                    }
+                                    $relationModel->setAttributes($var);
+                                    $var = $relationModel;
+                                } elseif (!is_object($var)) {
                                     array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
                                         $relationModel->$relationKey = $this->owner->$primaryKey;
                                     });
+
+                                    if($relationModel->hasMethod('loadBySingleValue')) {
+                                        $relationModel->loadBySingleValue($var);
+                                    }
+                                    else {
+                                        $attributeNames = array_keys(
+                                                    $relationModel->getAttributes(
+                                                        null,
+                                                        //array_merge(
+                                                        //    $relationModel->primaryKey(),
+                                                            array_keys($viaRelation->link)
+                                                        )
+                                                    );
+                                        $attributeName = array_shift(
+                                                $attributeNames
+                                                );
+                                        $relationModel->$attributeName = $var;
+                                    }
                                 }
-                                $relationModel->setAttributes($var);
                                 $var = $relationModel;
                             }
                         });
@@ -153,7 +178,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                         return;
                     } else {
                         $relationModel = $relation->findFor($name, $this->owner);
-                        if(!$relationModel) {
+                        if (!$relationModel) {
                             $relationModel = new $relationClassName();
                             array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
                                 $relationModel->$relationKey = $this->owner->$primaryKey;
@@ -191,11 +216,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             $this->_softDeleted[$name] = array_filter($this->_softDeleted[$name], function($obj) use ($value) {
                 if (is_array($value)) {
                     foreach ($value as $model) {
-                        if ($model instanceof ActiveRecordInterface
-                                && $obj instanceof ActiveRecordInterface
-                                && ($obj == $model || (!$model->getIsNewRecord()
-                                        && !$obj->getIsNewRecord()
-                                        && $obj->getPrimaryKey(true) == $model->getPrimaryKey(true)
+                        if ($model instanceof ActiveRecordInterface && $obj instanceof ActiveRecordInterface && ($obj == $model || (!$model->getIsNewRecord() && !$obj->getIsNewRecord() && $obj->getPrimaryKey(true) == $model->getPrimaryKey(true)
                                 ) )) {
                             return false;
                         }
@@ -214,44 +235,42 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
         $object = $this;
         array_walk($this->_related, function(&$related, $name) use ($object) {
             $relation = $object->_getRelation($name);
-            if($relation->multiple) {
-                if(is_array($related)) {
+            if ($relation->multiple) {
+                if (is_array($related)) {
                     $unlinkPks = [];
                     array_walk($related, function(&$model) use ($object, $name, &$unlinkPks) {
-                        if($model->validate()) {
+                        if ($model->validate()) {
                             $object->owner->link($name, $model);
-                            $unlinkPks[] = implode(',',$model->getPrimaryKey(true));
+                            $unlinkPks[] = implode(',', $model->getPrimaryKey(true));
                             return true;
                         }
                         throw new \Exception('Validation error for relation ' . $name . '.');
                     });
-                    if(sizeof($unlinkPks)) {
+                    if (sizeof($unlinkPks)) {
                         $relation->andWhere([
                             'not in',
                             '('
-                            . implode( ',',
-                                    array_keys($relation->primaryModel->getPrimaryKey(true))
-                                )
+                            . implode(',', array_keys($relation->primaryModel->getPrimaryKey(true))
+                            )
                             . ')',
                             $unlinkPks,
-                            ]);
+                        ]);
                     }
                     $unlinkRelations = $relation->findFor($name, $object->owner);
                     array_walk($unlinkRelations, function($model) use ($name, $object) {
-                             $delete = false;
-                            if(!$relation->via) {
-                                foreach($relation->link as $fk => $pk) {
-                                    if($model->isAttributeRequired($fk)) {
-                                        $delete = true;
-                                    }
+                        $delete = false;
+                        if (!$relation->via) {
+                            foreach ($relation->link as $fk => $pk) {
+                                if ($model->isAttributeRequired($fk)) {
+                                    $delete = true;
                                 }
                             }
-                            return $object->owner->unlink($name, $model, $delete);
+                        }
+                        return $object->owner->unlink($name, $model, $delete);
                     });
                 }
-            }
-            else {
-                if($related->validate()) {
+            } else {
+                if ($related->validate()) {
                     $object->owner->link($name, $related);
                     return true;
                 }

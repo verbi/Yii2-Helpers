@@ -5,6 +5,7 @@ class GeneralFunctionEvent extends \yii\base\Event {
     protected $returnValue;
     protected $hasReturnValue = false;
     protected $params;
+    public $isValid = true;
     
     public function setReturnValue($value) {
         $this->returnValue = $value;

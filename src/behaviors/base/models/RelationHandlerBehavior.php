@@ -1,5 +1,4 @@
 <?php
-
 namespace verbi\yii2Helpers\behaviors\base\models;
 
 use yii\db\ActiveRecordInterface;
@@ -12,14 +11,14 @@ use yii\db\AfterSaveEvent;
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
  */
-
 class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior {
 
     use \verbi\yii2ExtendedActiveRecord\traits\ActiveRecordTrait;
 
     protected $_relations = [];
     protected $_related = [];
-
+    protected $relationsReturn = null;
+    
     public function events() {
         $ownerClass = $this->owner->className();
         return [
@@ -27,9 +26,32 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             $ownerClass::$EVENT_BEFORE_MAGIC_SET => 'beforeMagicSet',
             $ownerClass::EVENT_AFTER_UPDATE => 'afterSave',
             $ownerClass::EVENT_AFTER_INSERT => 'afterSave',
+            $ownerClass::$EVENT_AFTER_GET_FORM_ATTRIBUTES => 'afterGetFormAttributes',
         ];
     }
 
+    public function getRelationNamesForForm() {
+        return [];
+    }
+    
+    public function afterGetFormAttributes(GeneralFunctionEvent $event) {
+        if($this->owner && isset($event->params['attributes'])) {
+            $params = $event->params;
+            $owner = $this->owner;
+            $relationNamesForForm = $this->owner->getRelationNamesForForm();
+            $results = [];
+            array_walk($relationNamesForForm,
+                function(&$item) use ($owner, &$results) {
+                    if($owner->hasMethod('get'.ucfirst($item))) {
+                        $results[$item] = $owner->$item;
+                    }
+                });
+            $params['attributes'] = array_merge($params['attributes'], $results);
+            $event->setParams($params);
+            $event->setReturnValue($params['attributes']);
+        }
+    }
+    
     public function __call($name, $params) {
         if ($this->owner && strpos($name, 'set') === 0) {
             $relation = $this->_getRelation(lcfirst(substr($name, 2)));
@@ -133,15 +155,18 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                         $models = $value;
                         array_walk($models, function(&$var) use ($relationClassName, $viaRelation, &$foundModels, &$foundPrimaryKeys, &$primaryKeyKeys) {
                             if(is_array($var) || !is_object($var)) {
-                                
-                                    $relationModel = new $relationClassName();
+                                $relationModel = new $relationClassName();
                                 if (is_array($var)) {
                                     $searchResult = array_search(array_filter($var, function($key) use (&$primaryKeyKeys) {
                                                 return in_array($key, $primaryKeyKeys);
                                             }, ARRAY_FILTER_USE_KEY), $foundPrimaryKeys);
+                                            
                                     if ($searchResult !== false) {
                                         $relationModel = $foundModels[$searchResult];
                                     } else {
+                                        // TODO: if a vviarelation is set (meaning this is a many many relation with a link table),
+                                        // than we must search for the records instead of creating them in-screan This means selection
+                                        // Filling in the isRelation here is just wrong.
                                         array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
                                             $relationModel->$relationKey = $this->owner->$primaryKey;
                                         });
@@ -149,10 +174,10 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                                     $relationModel->setAttributes($var);
                                     $var = $relationModel;
                                 } elseif (!is_object($var)) {
-                                    array_walk($viaRelation->link, function($primaryKey, $relationKey) use ($relationModel) {
-                                        $relationModel->$relationKey = $this->owner->$primaryKey;
-                                    });
-
+                                    $searchResult = array_search($var, array_column($foundModels,'primaryKey'));
+                                    if ($searchResult !== false) {
+                                        $relationModel = $foundModels[$searchResult];
+                                    }
                                     if($relationModel->hasMethod('loadBySingleValue')) {
                                         $relationModel->loadBySingleValue($var);
                                     }
@@ -244,7 +269,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                             $unlinkPks[] = implode(',', $model->getPrimaryKey(true));
                             return true;
                         }
-                        throw new \Exception('Validation error for relation ' . $name . '.');
+                        throw new \Exception('Validation error for relation ' . $name . '. ');
                     });
                     if (sizeof($unlinkPks)) {
                         $relation->andWhere([

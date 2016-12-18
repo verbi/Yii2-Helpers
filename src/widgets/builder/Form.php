@@ -15,7 +15,6 @@ class Form extends \kartik\builder\Form {
     }
     
     public static function widget($options = []) {
-        $options = static::prepareOptions($options);
-        return parent::widget($options);
+        return parent::widget(static::prepareOptions($options));
     }
 }

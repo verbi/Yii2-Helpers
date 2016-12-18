@@ -12,7 +12,6 @@ use verbi\yii2Helpers\events\GeneralFunctionEvent;
  * @license https://opensource.org/licenses/GPL-3.0
  */
 trait ComponentTrait {
-
     static $EVENT_BEFORE_MAGIC_GET = '_beforeMagicGet';
     static $EVENT_BEFORE_MAGIC_SET = '_beforeMagicSet';
 
@@ -80,7 +79,7 @@ trait ComponentTrait {
                             $sw = false;
                         } catch (\Exception $e) {
                             if (!$e instanceof UnknownPropertyException && !$e instanceof InvalidCallException) {
-                                return $e;
+                                throw $e;
                             }
                         }
                     }

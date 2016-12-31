@@ -24,7 +24,7 @@
               "kartik-v/yii2-money": "*",
               "kartik-v/yii2-slider": "*",
               "akavov/yii2-bootstrap-tokenfield": "*",
-              "borales/yii2-phone-input": "*",
+              "borales/yii2-phone-input": "dev-master",
               "drsdre/yii2-wizardwidget": "*",
               "unclead/yii2-multiple-input": "~1.0"
         },

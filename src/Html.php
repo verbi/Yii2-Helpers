@@ -1,15 +1,12 @@
 <?php
-
 namespace verbi\yii2Helpers;
-use sweelix\yii2\plupload\traits\Plupload;
+
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class Html extends \kartik\helpers\Html {
-    use Plupload;
-    
     public static function pageHeading($title, $options = []) {
         return static::tag('h1', static::encode($title), $options);
     }

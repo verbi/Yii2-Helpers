@@ -54,15 +54,24 @@ class ListView extends \yii\widgets\ListView {
             echo parent::widget( $config );
         }
         else {
-            $pjaxConfig = [];
-            if( isset( $config['reloadTime'] ) ) {
-                $pjaxConfig['reloadTime'] = $config['reloadTime'];
-                unset( $config['reloadTime'] );
+            $enablePjax = true;
+            if(isset($config['enablePjax'])) {
+                $enablePjax = $config['enablePjax'];
+                unset($config['enablePjax']);
             }
-            $pjax = Pjax::begin( $pjaxConfig );
-            $pjax->linkSelector = '#' . $pjax->getId() . ' .pagination a';
+            if($enablePjax) {
+                $pjaxConfig = [];
+                if( isset( $config['reloadTime'] ) ) {
+                    $pjaxConfig['reloadTime'] = $config['reloadTime'];
+                    unset( $config['reloadTime'] );
+                }
+                $pjax = Pjax::begin( $pjaxConfig );
+                $pjax->linkSelector = '#' . $pjax->getId() . ' .pagination a';
+            }
             echo parent::widget( $config );
-            Pjax::end();
+            if($enablePjax) {
+                Pjax::end();
+            }
         }
         if($js) {
             $pjax->view->registerJs( $js );

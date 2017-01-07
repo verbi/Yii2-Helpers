@@ -13,6 +13,8 @@ use yii\web\View;
  */
 class Select extends Select2 {
     use \verbi\yii2Helpers\traits\WidgetTrait;
+    public $placeholder;
+    
     public static function widget($config = []) {
         if(!\yii::$app->user->isGuest && isset($config['pluginOptions']) && isset($config['pluginOptions']['ajax'])) {
             if(!isset($config['pluginOptions']['ajax']['headers']) && !isset($config['pluginOptions']['ajax']['headers']['Authorization'])) {
@@ -20,6 +22,10 @@ class Select extends Select2 {
                     '"Bearer " + (new Oauth2(' . json_encode(['siteBaseUrl' => \Yii::$app->homeUrl,]) . ')).getAjaxAccessToken()'
                 );
             }
+        }
+        if(isset($config['placeholder'])) {
+            $config['pluginOptions']['placeholder'] = $config['placeholder'];
+            unset($config['placeholder']);
         }
         return parent::widget($config);
     }

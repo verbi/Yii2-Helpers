@@ -16,6 +16,7 @@ class Editable extends \kartik\editable\Editable {
     use \verbi\yii2Helpers\traits\WidgetTrait;
     const INPUT_PHONE = '\borales\extensions\phoneInput\PhoneInput';
     const INPUT_RATING = 'verbi\yii2Helpers\widgets\StarRating';
+    const INPUT_HTML5_INPUT = 'input';
 
     protected $formatArray = [
         'datetime' => self::INPUT_DATETIME,

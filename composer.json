@@ -27,7 +27,7 @@
               "akavov/yii2-bootstrap-tokenfield": ">=0.1.0",
               "drsdre/yii2-wizardwidget": ">=1.2.3",
               "unclead/yii2-multiple-input": ">=1.0",
-              "bower-asset/scriptjs": "*",
+              "bower-asset/scriptjs": "*"
         },
         "extra": {
             "bootstrap": "verbi\\yii2Helpers\\Bootstrap"

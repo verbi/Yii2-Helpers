@@ -18,7 +18,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     protected $_relations = [];
     protected $_related = [];
     protected $relationsReturn = null;
-    
+
     public function events() {
         $ownerClass = $this->owner->className();
         return [
@@ -33,7 +33,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
     public function getRelationNamesForForm() {
         return [];
     }
-    
+
     public function afterGetFormAttributes(GeneralFunctionEvent $event) {
         if($this->owner && isset($event->params['attributes'])) {
             $params = $event->params;
@@ -43,15 +43,15 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             array_walk($relationNamesForForm,
                 function(&$item) use ($owner, &$results) {
                     if($owner->hasMethod('get'.ucfirst($item))) {
-                        $results[$item] = $owner->$item;
-                    }
-                });
+                    $results[$item] = $owner->$item;
+                }
+            });
             $params['attributes'] = array_merge($params['attributes'], $results);
             $event->setParams($params);
             $event->setReturnValue($params['attributes']);
         }
     }
-    
+
     public function __call($name, $params) {
         if ($this->owner && strpos($name, 'set') === 0) {
             $relation = $this->_getRelation(lcfirst(substr($name, 2)));
@@ -160,7 +160,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                                     $searchResult = array_search(array_filter($var, function($key) use (&$primaryKeyKeys) {
                                                 return in_array($key, $primaryKeyKeys);
                                             }, ARRAY_FILTER_USE_KEY), $foundPrimaryKeys);
-                                            
+
                                     if ($searchResult !== false) {
                                         $relationModel = $foundModels[$searchResult];
                                     } else {
@@ -183,16 +183,16 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                                     }
                                     else {
                                         $attributeNames = array_keys(
-                                                    $relationModel->getAttributes(
+                                                $relationModel->getAttributes(
                                                         null,
                                                         //array_merge(
                                                         //    $relationModel->primaryKey(),
-                                                            array_keys($viaRelation->link)
-                                                        )
-                                                    );
+                                                        array_keys($viaRelation->link)
+                                                )
+                                        );
                                         $attributeName = array_shift(
                                                 $attributeNames
-                                                );
+                                        );
                                         $relationModel->$attributeName = $var;
                                     }
                                 }

@@ -68,4 +68,8 @@ class Html extends \kartik\helpers\Html {
         }
         return parent::img($src, $options);
     }
+    
+    public static function hidden($text, $options = []) {
+        return static::tag('div', $text, array_merge(['hidden'=>'hidden',],$options));
+    }
 }

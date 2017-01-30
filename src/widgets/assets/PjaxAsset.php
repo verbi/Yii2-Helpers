@@ -7,5 +7,7 @@ namespace verbi\yii2Helpers\widgets\assets;
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class PjaxAsset extends \yii\widgets\PjaxAsset {
-    
+    public $depends = [
+        'verbi\yii2Helpers\widgets\assets\ScriptjsAsset',
+    ];
 }

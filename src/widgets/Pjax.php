@@ -237,7 +237,6 @@ class Pjax extends \yii\widgets\Pjax {
         $depends = ArrayHelper::remove($options, 'depends', []);
         if (empty($depends)) {
             $position = ArrayHelper::remove($options, 'position', View::POS_END);
-            //$this->jsFiles[$position][$key] = Html::jsFile($url, $options);
             $this->jsFiles[$position][$key] = [
                 'url' => $url,
                 'options' => $options

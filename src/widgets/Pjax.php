@@ -22,8 +22,7 @@ class Pjax extends \yii\widgets\Pjax {
     protected $_id = null;
     public static $counter = [];
     public $clientOptions = [
-        'skipOuterContainers' => true,
-        'timeout' => 5000,
+        'skipOuterContainers' => true
     ];
     protected $_reloadTime;
     public $css;
@@ -33,7 +32,7 @@ class Pjax extends \yii\widgets\Pjax {
     public $linkTags;
     public $assetBundles = [];
     protected $_assetManager;
-    public $timeout = 5000;
+    public $timeout = 10000;
 
     public function getId($autoGenerate = true) {
         if ($autoGenerate && $this->_id === null) {

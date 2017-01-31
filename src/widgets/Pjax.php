@@ -281,11 +281,13 @@ class Pjax extends \yii\widgets\Pjax {
         }
         if ($this->formSelector !== false) {
             $formSelector = Json::htmlEncode($this->formSelector !== null ? $this->formSelector : '#' . $id . ' form[data-pjax]');
-            $js .= "\njQuery(document).on('submit', $formSelector, function (event) {jQuery.pjax.submit(event, '#$id', $options);});";
+            $js .= "jQuery(document).on('submit', $formSelector, function (event) {jQuery.pjax.submit(event, '#$id', $options);});";
         }
+        
         $view = $this->getView();
         PjaxAsset::register($view);
         if ($js !== '') {
+            $js.= "dynamicScriptloader=new PjaxDynamicScriptLoader();dynamicScriptloader.init(\"#$id\");";
             $view->registerJs($js);
         }
     }

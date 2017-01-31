@@ -8,6 +8,13 @@ namespace verbi\yii2Helpers\widgets\assets;
 */
 class PjaxAsset extends \yii\widgets\PjaxAsset {
     public $depends = [
+        'yii\web\JqueryAsset',
         'verbi\yii2Helpers\widgets\assets\ScriptjsAsset',
+        'yii\widgets\PjaxAsset',
+    ];
+    public $sourcePath = '@vendor/verbi/yii2-helpers/src/widgets/assets/pjaxAssets';
+    
+    public $js = [
+        'js/dynamic-script-loader.js',
     ];
 }

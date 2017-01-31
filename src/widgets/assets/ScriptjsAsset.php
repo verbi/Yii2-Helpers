@@ -15,8 +15,8 @@ class ScriptjsAsset extends AssetBundle
     public $depends = [
         'yii\web\JqueryAsset'
     ];
-    public $sourcePath = '@vendor/bower/scriptjs/src';
+    public $sourcePath = '@vendor/bower/scriptjs/dist';
     public $js = [
-        'script.js',
+        'script.min.js',
     ];
 }

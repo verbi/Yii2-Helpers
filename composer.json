@@ -15,6 +15,7 @@
 	},
         "require": {
               "verbi/yii2-extended-activerecord": ">=1.2.0",
+              "verbi/yii2-base-widget": "*",
               "npm-asset/bootpag": ">=1.2.0",
               "bower-asset/jquery.lazyload": ">=1.9",
               "bower-asset/dropzone": ">=4.0.1",

@@ -5,6 +5,6 @@ namespace verbi\yii2Helpers\widgets;
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
 */
-class Widget extends \yii\base\Widget {
+class Widget extends \verbi\yii2BaseWidget\widgets\Widget {
     
 }

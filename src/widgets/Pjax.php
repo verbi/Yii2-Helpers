@@ -33,6 +33,7 @@ class Pjax extends \yii\widgets\Pjax {
     public $assetBundles = [];
     protected $_assetManager;
     public $timeout = 10000;
+    public $progressBar = true;
 
     public function getId($autoGenerate = true) {
         if ($autoGenerate && $this->_id === null) {
@@ -90,43 +91,41 @@ class Pjax extends \yii\widgets\Pjax {
             foreach (array_keys($this->assetBundles) as $bundle) {
                 $this->registerAssetFiles($bundle);
             }
-            if($this->jsFiles) {
+            if ($this->jsFiles) {
                 foreach ($this->jsFiles as $position => $jsfiles) {
-                    if($jsfiles) {
+                    if ($jsfiles) {
                         $array[$position]['jsFiles'] = $jsfiles;
                     }
                 }
             }
             $scripts = [];
-            if($this->js) {
-                foreach($this->js as $position => $js) {
-                    if($js) {
+            if ($this->js) {
+                foreach ($this->js as $position => $js) {
+                    if ($js) {
                         $array[$position]['js'] = implode("", $js);
                     }
                 }
             }
-            if($this->cssFiles) {
-                foreach ($this->cssFiles as $key =>$cssFile) {
-                    if($cssFile) {
+            if ($this->cssFiles) {
+                foreach ($this->cssFiles as $key => $cssFile) {
+                    if ($cssFile) {
                         $array['cssFiles'][$key] = $cssFile;
                     }
                 }
             }
-            if($this->css) {
-                foreach($this->css as $key => $css) {
-                    if($css) {
+            if ($this->css) {
+                foreach ($this->css as $key => $css) {
+                    if ($css) {
                         $array['css'][$key] = $css;
                     }
                 }
             }
         }
-        $content = Html::hidden(json_encode($array,true), ['class' => 'hidden js-pjax-scripts']);
+        $content = Html::hidden(json_encode($array, true), ['class' => 'hidden js-pjax-scripts']);
         return $content;
     }
 
-    public function clear()
-    {
-        //$this->metaTags = null;
+    public function clear() {
         $this->linkTags = null;
         $this->css = null;
         $this->cssFiles = null;
@@ -136,11 +135,10 @@ class Pjax extends \yii\widgets\Pjax {
     }
 
     public function getAssetManager() {
-        return $this->_assetManager ? :Yii::$app->getAssetManager();
+        return $this->_assetManager ? : Yii::$app->getAssetManager();
     }
 
-    protected function registerAssetFiles($name)
-    {
+    protected function registerAssetFiles($name) {
         if (!isset($this->assetBundles[$name])) {
             return;
         }
@@ -153,7 +151,7 @@ class Pjax extends \yii\widgets\Pjax {
         }
         unset($this->assetBundles[$name]);
     }
-    
+
     public function registerAssetBundle($name, $position = null) {
         if (!isset($this->assetBundles[$name])) {
             $am = $this->getAssetManager();
@@ -199,7 +197,6 @@ class Pjax extends \yii\widgets\Pjax {
             'css' => $css,
             'options' => $options,
         ];
-        //$this->css[$key] = Html::style($css, $options);
     }
 
     public function registerCssFile($url, $options = [], $key = null) {
@@ -211,7 +208,6 @@ class Pjax extends \yii\widgets\Pjax {
                 'url' => $url,
                 'options' => $options,
             ];
-            //$this->cssFiles[$key] = Html::cssFile($url, $options);
         } else {
             $this->getAssetManager()->bundles[$key] = Yii::createObject([
                         'class' => AssetBundle::className(),
@@ -284,7 +280,7 @@ class Pjax extends \yii\widgets\Pjax {
             $formSelector = Json::htmlEncode($this->formSelector !== null ? $this->formSelector : '#' . $id . ' form[data-pjax]');
             $js .= "jQuery(document).on('submit', $formSelector, function (event) {jQuery.pjax.submit(event, '#$id', $options);});";
         }
-        
+
         $view = $this->getView();
         PjaxAsset::register($view);
         if ($js !== '') {
@@ -297,6 +293,25 @@ class Pjax extends \yii\widgets\Pjax {
      * @inheritdoc
      */
     public function run() {
+        if($this->progressBar==true
+                || is_array($this->progressBar)
+                && (!isset($this->progressBar['enabled'])
+                    || $this->progressBar['enabled'])) {
+            \verbi\yii2Helpers\widgets\assets\NProgressAsset::register($this->getView());
+            $js = '$(document)'
+                    . '.ajaxStart(function () {'
+                        . 'NProgress.start();'
+                    . '})'
+                    . '.ajaxStop(function () {'
+                        . 'NProgress.done();'
+                    . '});';
+            if(is_array($this->progressBar) && isset($this->progressBar['js'])) {
+                $js = $this->progressBar['js'];
+            }
+            if($js) {
+                $this->getView()->registerJs($js);
+            }
+        }
         if ($this->requiresPjax()) {
             Spaceless::begin();
             echo $this->renderPjaxEndHtml();
@@ -306,4 +321,6 @@ class Pjax extends \yii\widgets\Pjax {
         }
         return parent::run();
     }
+
+    
 }

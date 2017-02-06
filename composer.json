@@ -19,7 +19,6 @@
               "npm-asset/bootpag": ">=1.2.0",
               "bower-asset/jquery.lazyload": ">=1.9",
               "bower-asset/dropzone": ">=4.0.1",
-              "verbi/yii2-widget-ajax-loading-spinner": "*",
               "bower-asset/nprogress": "*",
               "kartik-v/yii2-helpers": ">=v1.3.6",
               "kartik-v/yii2-detail-view": ">=v1.7.5",

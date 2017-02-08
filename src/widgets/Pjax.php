@@ -258,7 +258,6 @@ class Pjax extends \yii\widgets\Pjax {
             $this->clientOptions['headers']['Authorization'] = new JsExpression(' ('
                     . '"Bearer " + (new Oauth2(' . json_encode(['siteBaseUrl' => \Yii::$app->homeUrl,]) . ')).getAjaxAccessToken()'
                     . ')');
-            $this->clientOptions['headers']['Cache-Control'] = 'no-cache, no-store, must-revalidate';
         }
         $id = $this->options['id'];
         $this->clientOptions['headers']['X-PJAX'] = 'true';

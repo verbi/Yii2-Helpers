@@ -10,6 +10,17 @@ use \yii\web\BadRequestHttpException;
  */
 trait ControllerTrait {
 
+    public function getActions() {
+        $actions = [];
+        foreach($this->getMethods() as $methodName) {
+            if(strpos($methodName,'action')===0 && $methodName !== 'actions') {
+                $actionName = lcfirst(substr($methodName,6));
+                $actions[$actionName] = $this->createAction($actionName);
+            }
+        }
+        return array_merge($actions, $this->actions());
+    }
+    
     public function createAction($id) {
         $action = parent::createAction($id);
         if ($action == null && preg_match('/^[a-z0-9\\-_]+$/', $id) && strpos($id, '--') === false && trim($id, '-') === $id) {

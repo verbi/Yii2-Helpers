@@ -18,13 +18,17 @@ class AccessControl extends YiiAccessControl {
         if($this->owner->hasMethod('getActions')) {
             $actionIds = array_keys($this->owner->getActions());
             foreach($actionIds as $id) {
-                $rules[$id] = Yii::createObject(array_merge($this->ruleConfig, [
-                    'allow' => true,
-                    'actions' => [$id],
-                    'roles' => [$this->owner->className() . '-' . $id],
-                ]));
+                $rules[$id] = $this->generateRule($id);
             }
         }
         return $rules;
+    }
+    
+    protected function generateRule($actionId) {
+        return Yii::createObject(array_merge($this->ruleConfig, [
+                    'allow' => true,
+                    'actions' => [$actionId],
+                    'roles' => [$this->owner->className() . '-' . $actionId],
+                ]));
     }
 }

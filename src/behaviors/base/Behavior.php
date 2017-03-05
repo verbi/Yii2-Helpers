@@ -8,6 +8,7 @@ namespace verbi\yii2Helpers\behaviors\base;
 */
 class Behavior extends \yii\base\Behavior {
     use \verbi\yii2Helpers\traits\ComponentTrait;
+    use \verbi\yii2Helpers\traits\BehaviorTrait;
     
     public function attach($owner)
     {

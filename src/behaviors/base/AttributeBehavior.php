@@ -7,5 +7,6 @@ namespace verbi\yii2Helpers\behaviors\base;
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class AttributeBehavior extends \yii\behaviors\AttributeBehavior {
+    use \verbi\yii2Helpers\traits\BehaviorTrait;
     
 }

@@ -5,13 +5,14 @@ use Yii;
 use yii\filters\AccessControl as YiiAccessControl;
 
 class AccessControl extends YiiAccessControl {
+    use \verbi\yii2Helpers\traits\BehaviorTrait;
+    
     public function attach($owner) {
         parent::attach($owner);
         if(!sizeof($this->rules)) {
             $this->rules = $this->generateRules();
         }
     }
-    
     
     protected function generateRules() {
         $rules = [];

@@ -12,8 +12,9 @@ use yii\db\AfterSaveEvent;
  * @license https://opensource.org/licenses/GPL-3.0
  */
 class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior {
-
+    
     use \verbi\yii2ExtendedActiveRecord\traits\ActiveRecordTrait;
+    use \verbi\yii2Helpers\traits\BehaviorTrait;
 
     protected $_relations = [];
     protected $_related = [];

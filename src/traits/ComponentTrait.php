@@ -14,7 +14,23 @@ use verbi\yii2Helpers\events\GeneralFunctionEvent;
 trait ComponentTrait {
     static $EVENT_BEFORE_MAGIC_GET = '_beforeMagicGet';
     static $EVENT_BEFORE_MAGIC_SET = '_beforeMagicSet';
-
+    static $EVENT_BEFORE_ATTACH_BEHAVIOR = '_beforeAttachBehavior';
+    static $EVENT_AFTER_ATTACH_BEHAVIOR = '_afterAttachBehavior';
+    
+    public function __uses() {
+        return class_uses(self::ClassName());
+    }
+    
+//    public function init() {
+//        parent::init();
+//        foreach($this->__uses() as $uses) {
+//            $method = '__' . str_replace( '\\', '_', $uses ) . 'Init';
+//            if($this->hasMethod($method)) {
+//                $this->$method();
+//            }
+//        }
+//    }
+    
     /**
      * @inheritdoc
      */
@@ -208,5 +224,25 @@ trait ComponentTrait {
 
     public function hasBehaviorByClass($className) {
         return $this->getBehaviorByClass($className) ? true : false;
+    }
+    
+    public function attachBehavior($name, $behavior)
+    {
+        if ($this->hasMethod('trigger')) {
+            $event = new GeneralFunctionEvent([
+                'params' => [
+                    'name' => $name,
+                    'behavior' => $behavior,
+                ],
+            ]);
+            if(!$this->trigger(self::$EVENT_BEFORE_ATTACH_BEHAVIOR, $event)) {
+                return false;
+            }
+        }
+        $result = parent::attachBehavior($name, $behavior);
+        if ($this->hasMethod('trigger')) {
+            $this->trigger(self::$EVENT_AFTER_ATTACH_BEHAVIOR, $event);
+        }
+        return $result;
     }
 }

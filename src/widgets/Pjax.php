@@ -11,6 +11,7 @@ use verbi\yii2WebView\web\View;
 use yii\web\JqueryAsset;
 use verbi\yii2Helpers\ArrayHelper;
 use yii\web\JsExpression;
+use verbi\yii2Helpers\events\GeneralFunctionEvent;
 
 /**
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -19,6 +20,8 @@ use yii\web\JsExpression;
  */
 class Pjax extends \yii\widgets\Pjax {
 
+    const EVENT_END_PJAX_HTML = 'event_end_pjax_html';
+
     protected $_id = null;
     public static $counter = [];
     public $clientOptions = [
@@ -26,14 +29,17 @@ class Pjax extends \yii\widgets\Pjax {
     ];
     protected $_reloadTime;
     public $css;
+    public $cssKeys;
     public $cssFiles;
     public $js;
+    public $jsKeys;
     public $jsFiles;
     public $linkTags;
     public $assetBundles = [];
     protected $_assetManager;
     public $timeout = 10000;
     public $progressBar = true;
+    public $alreadyLoaded = [];
 
     public function getId($autoGenerate = true) {
         if ($autoGenerate && $this->_id === null) {
@@ -55,6 +61,9 @@ class Pjax extends \yii\widgets\Pjax {
         if (isset($config['reloadTime'])) {
             $reloadTime = $config['reloadTime'];
             unset($config['reloadTime']);
+        }
+        if (!isset($config['alreadyLoaded'])) {
+            $config['alreadyLoaded'] = [];
         }
         $return = parent::begin($config);
         if ($reloadTime) {
@@ -91,37 +100,10 @@ class Pjax extends \yii\widgets\Pjax {
             foreach (array_keys($this->assetBundles) as $bundle) {
                 $this->registerAssetFiles($bundle);
             }
-            if ($this->jsFiles) {
-                foreach ($this->jsFiles as $position => $jsfiles) {
-                    if ($jsfiles) {
-                        $array[$position]['jsFiles'] = $jsfiles;
-                    }
-                }
-            }
-            $scripts = [];
-            if ($this->js) {
-                foreach ($this->js as $position => $js) {
-                    if ($js) {
-                        $array[$position]['js'] = implode("", $js);
-                    }
-                }
-            }
-            if ($this->cssFiles) {
-                foreach ($this->cssFiles as $key => $cssFile) {
-                    if ($cssFile) {
-                        $array['cssFiles'][$key] = $cssFile;
-                    }
-                }
-            }
-            if ($this->css) {
-                foreach ($this->css as $key => $css) {
-                    if ($css) {
-                        $array['css'][$key] = $css;
-                    }
-                }
-            }
+            $this->view->trigger(self::EVENT_END_PJAX_HTML, new GeneralFunctionEvent(['sender' => $this]));
+            $array = $this->_getAssetsArray();
         }
-        $content = Html::hidden(json_encode($array, true), ['class' => 'hidden js-pjax-scripts']);
+        $content = sizeof($array) ?Html::hidden(json_encode($array, true), ['class' => 'hidden js-pjax-scripts']):'';
         return $content;
     }
 
@@ -134,11 +116,15 @@ class Pjax extends \yii\widgets\Pjax {
         $this->assetBundles = [];
     }
 
+    public function isAlreadyLoaded($url, $type = 'jsFiles') {
+        return (isset($this->alreadyLoaded[$type]) && is_array($this->alreadyLoaded[$type]) && array_search($url, $this->alreadyLoaded[$type]) !== FALSE);
+    }
+
     public function getAssetManager() {
         return $this->_assetManager ? : Yii::$app->getAssetManager();
     }
 
-    protected function registerAssetFiles($name) {
+    public function registerAssetFiles($name) {
         if (!isset($this->assetBundles[$name])) {
             return;
         }
@@ -202,21 +188,23 @@ class Pjax extends \yii\widgets\Pjax {
     public function registerCssFile($url, $options = [], $key = null) {
         $url = Yii::getAlias($url);
         $key = $key ? : $url;
-        $depends = ArrayHelper::remove($options, 'depends', []);
-        if (empty($depends)) {
-            $this->cssFiles[$key] = [
-                'url' => $url,
-                'options' => $options,
-            ];
-        } else {
-            $this->getAssetManager()->bundles[$key] = Yii::createObject([
-                        'class' => AssetBundle::className(),
-                        'baseUrl' => '',
-                        'css' => [strncmp($url, '//', 2) === 0 ? $url : ltrim($url, '/')],
-                        'cssOptions' => $options,
-                        'depends' => (array) $depends,
-            ]);
-            $this->registerAssetBundle($key);
+        if (!$this->isAlreadyLoaded($url, 'cssFiles')) {
+            $depends = ArrayHelper::remove($options, 'depends', []);
+            if (empty($depends)) {
+                $this->cssFiles[$key] = [
+                    'url' => $url,
+                    'options' => $options,
+                ];
+            } else {
+                $this->getAssetManager()->bundles[$key] = Yii::createObject([
+                            'class' => AssetBundle::className(),
+                            'baseUrl' => '',
+                            'css' => [strncmp($url, '//', 2) === 0 ? $url : ltrim($url, '/')],
+                            'cssOptions' => $options,
+                            'depends' => (array) $depends,
+                ]);
+                $this->registerAssetBundle($key);
+            }
         }
     }
 
@@ -231,22 +219,24 @@ class Pjax extends \yii\widgets\Pjax {
     public function registerJsFile($url, $options = [], $key = null) {
         $url = Yii::getAlias($url);
         $key = $key ? : $url;
-        $depends = ArrayHelper::remove($options, 'depends', []);
-        if (empty($depends)) {
-            $position = ArrayHelper::remove($options, 'position', View::POS_END);
-            $this->jsFiles[$position][$key] = [
-                'url' => $url,
-                'options' => $options
-            ];
-        } else {
-            $this->getAssetManager()->bundles[$key] = Yii::createObject([
-                        'class' => AssetBundle::className(),
-                        'baseUrl' => '',
-                        'js' => [strncmp($url, '//', 2) === 0 ? $url : ltrim($url, '/')],
-                        'jsOptions' => $options,
-                        'depends' => (array) $depends,
-            ]);
-            $this->registerAssetBundle($key);
+        if (!$this->isAlreadyLoaded($url)) {
+            $depends = ArrayHelper::remove($options, 'depends', []);
+            if (empty($depends)) {
+                $position = ArrayHelper::remove($options, 'position', View::POS_END);
+                $this->jsFiles[$position][$key] = [
+                    'url' => $url,
+                    'options' => $options
+                ];
+            } else {
+                $this->getAssetManager()->bundles[$key] = Yii::createObject([
+                            'class' => AssetBundle::className(),
+                            'baseUrl' => '',
+                            'js' => [strncmp($url, '//', 2) === 0 ? $url : ltrim($url, '/')],
+                            'jsOptions' => $options,
+                            'depends' => (array) $depends,
+                ]);
+                $this->registerAssetBundle($key);
+            }
         }
     }
 
@@ -282,33 +272,64 @@ class Pjax extends \yii\widgets\Pjax {
 
         $view = $this->getView();
         PjaxAsset::register($view);
-        if ($js !== '') {
-            $js.= "dynamicScriptloader=new PjaxDynamicScriptLoader();dynamicScriptloader.init(\"#$id\");";
-            $view->registerJs($js);
-        }
+//        if ($js !== '') {
+        $js.= "dynamicScriptloader=new PjaxDynamicScriptLoader();dynamicScriptloader.init(\"#$id\");";
+//        $includes = [
+//                'jsFiles' => is_array($this->jsFiles)?array_map(function($var) {
+//                            return $var['url'];
+//                        }, $this->jsFiles):[],
+////                'js' => $this->js,
+//                'cssFiles' => is_array($this->cssFiles)?array_map(function($var) {
+//                            return $var['url'];
+//                        }, $this->cssFiles):[],
+////                'css' => $this->css,
+//            ];
+//                        
+//            $js.='if (typeof addLoadedScripts == \'function\') {'
+//                    . 'dynamicScriptloader.addLoadedScripts(' . json_encode($includes) . ');'
+//                    . '}';
+        $view->registerJs($js);
+        
+//        }
+        
+        
+        
+//        $view->on('EVENT_AFTER_PROCESSING_KEYS', function($event) use ($view) {
+//            $includes = [];
+//            if($view->jsKeys) {
+//                $includes['loadedKeys']['js'] = $view->jsKeys;
+//            }
+//            if($view->cssKeys) {
+//                $includes['loadedKeys']['css'] = $view->cssKeys;
+//            }
+//            if(sizeof($includes)) {
+//                $js = 'var dynamicScriptloader=new PjaxDynamicScriptLoader();'
+//                    . 'if (typeof dynamicScriptloader.addLoadedScripts == \'function\') {'
+//                        . 'dynamicScriptloader.addLoadedScripts(' . json_encode($includes) . ');'
+//                    . '}';
+//                $view->registerJs(new JsExpression($js));
+//            }
+//        });
     }
 
     /**
      * @inheritdoc
      */
     public function run() {
-        if($this->progressBar==true
-                || is_array($this->progressBar)
-                && (!isset($this->progressBar['enabled'])
-                    || $this->progressBar['enabled'])) {
+        if ($this->progressBar == true || is_array($this->progressBar) && (!isset($this->progressBar['enabled']) || $this->progressBar['enabled'])) {
             \verbi\yii2Helpers\widgets\assets\NProgressAsset::register($this->getView());
             $js = '$(document)'
                     . '.ajaxStart(function () {'
-                        . 'NProgress.start();'
+                    . 'NProgress.start();'
                     . '})'
                     . '.ajaxStop(function () {'
-                        . 'NProgress.done();'
+                    . 'NProgress.done();'
                     . '});';
-            if(is_array($this->progressBar) && isset($this->progressBar['js'])) {
+            if (is_array($this->progressBar) && isset($this->progressBar['js'])) {
                 $js = $this->progressBar['js'];
             }
-            if($js) {
-                $this->getView()->registerJs($js);
+            if ($js) {
+                $this->getView()->registerJs(new JsExpression($js));
             }
         }
         if ($this->requiresPjax()) {
@@ -320,6 +341,4 @@ class Pjax extends \yii\widgets\Pjax {
         }
         return parent::run();
     }
-
-    
 }

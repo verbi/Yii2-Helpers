@@ -245,4 +245,16 @@ trait ComponentTrait {
         }
         return $result;
     }
+    
+    public function getComponentId($app = null) {
+        if($app===null) {
+            $app = \Yii::$app;
+        }
+        foreach($app->getComponents(false) as $key => $component) {
+            if($this===$component) {
+                return $key;
+            }
+        }
+        return null;
+    }
 }

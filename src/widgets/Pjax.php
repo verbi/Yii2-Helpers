@@ -40,6 +40,52 @@ class Pjax extends \yii\widgets\Pjax {
     public $timeout = 10000;
     public $progressBar = true;
     public $alreadyLoaded = [];
+    
+
+    public function _getAssetsArray() {
+        $array = [];
+        
+        if ($this->jsKeys) {
+            $array['loadedKeys']['js'] = $this->jsKeys;
+        } elseif ($this->jsFiles) {
+            foreach ($this->jsFiles as $position => $jsfiles) {
+                if ($jsfiles) {
+                    $array[$position]['jsFiles'] = $jsfiles;
+                }
+            }
+        }
+        $scripts = [];
+        if ($this->js) {
+            foreach ($this->js as $position => $js) {
+                if ($js) {
+                    $array[$position]['js'] = implode("", $js);
+                }
+            }
+        }
+        if ($this->cssKeys) {
+            $array['loadedKeys']['css'] = $this->cssKeys;
+//                foreach ($this->cssKeys as $position => $cssKeys) {
+//                    if ($cssKeys) {
+//                        $array['cssKeys'] = $cssKeys;
+//                    }
+//                }
+        } elseif ($this->cssFiles) {
+            foreach ($this->cssFiles as $key => $cssFile) {
+                if ($cssFile) {
+                    $array['cssFiles'][$key] = $cssFile;
+                }
+            }
+        }
+        if ($this->css) {
+            foreach ($this->css as $key => $css) {
+                if ($css) {
+                    $array['css'][$key] = $css;
+                }
+            }
+        }
+        
+        return $array;
+    }
 
     public function getId($autoGenerate = true) {
         if ($autoGenerate && $this->_id === null) {

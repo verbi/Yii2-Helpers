@@ -14,7 +14,7 @@ function PjaxDynamicScriptLoader() {
     $('script').each(function (i, scriptTag) {
         var src = $(scriptTag).attr('src');
         if (src) {
-            if (!$.inArray(src, instance.loadedScripts)) {
+            if ($.inArray(src, instance.loadedScripts)===-1) {
                 instance.loadedScripts.push(src);
             }
         }
@@ -42,40 +42,57 @@ function PjaxDynamicScriptLoader() {
         });
     };
 
+    this.loadCssFiles = function (cssFiles) {
+        $(cssFiles).each(function (k, cssFile) {
+            if ($.inArray(cssFile, instance.loadedCssFile) === -1) {
+                instance.loadedCssFile.push(cssFile);
+                $("<link/>", {
+                    rel: "stylesheet",
+                    type: "text/css",
+                    href: cssFile
+                }).appendTo("head");
+            }
+        });
+    };
+
+    this.getJsFiles = function (positions) {
+        var jsFiles = [];
+        $(Object.keys(positions)).each(function (i, position) {
+            if (positions[position].jsFiles) {
+                $(Object.keys(positions[position].jsFiles)).each(function (j, key) {
+                    var file = positions[position].jsFiles[key];
+                    if ($.inArray(file.url, instance.loadedScripts) === -1) {
+                        jsFiles.push(file.url);
+                        instance.loadedScripts.push(file.url);
+                    }
+                });
+            }
+        });
+        return jsFiles;
+    };
+
+    this.getJsScripts = function (positions) {
+        var js = '';
+        $(Object.keys(positions)).each(function (i, position) {
+            if (typeof positions[position].js === "string") {
+                js += positions[position].js;
+            }
+        });
+        return js;
+    };
+
     this.pjaxEndEvent = function (e) {
         try {
             $(e.target).find('.js-pjax-scripts').each(function (index, element) {
                 var positions = JSON.parse($(element).html());
 
                 if (positions.cssFiles) {
-                    $(Object.keys(positions.cssFiles)).each(function (k, cssFile) {
-                        if ($.inArray(cssFile, instance.loadedCssFile) === -1) {
-                            instance.loadedCssFile.push(cssFile);
-                            $("<link/>", {
-                                rel: "stylesheet",
-                                type: "text/css",
-                                href: cssFile
-                            }).appendTo("head");
-                        }
-                    });
+                    instance.loadCssFiles(Object.keys(positions.cssFiles));
                 }
 
-                var jsFiles = [];
-                var js = '';
-                $(Object.keys(positions)).each(function (i, position) {
-                    if (positions[position].jsFiles) {
-                        $(Object.keys(positions[position].jsFiles)).each(function (j, key) {
-                            var file = positions[position].jsFiles[key];
-                            if ($.inArray(file.url, instance.loadedScripts) === -1) {
-                                jsFiles.push(file.url);
-                                instance.loadedScripts.push(file.url);
-                            }
-                        });
-                    }
-                    if (positions[position].js) {
-                        js += positions[position].js;
-                    }
-                });
+                var jsFiles = instance.getJsFiles(positions);
+                var js = instance.getJsScripts(positions);
+
                 if (jsFiles.length) {
                     $script(jsFiles, function () {
                         if (js) {

@@ -19,6 +19,7 @@
               "npm-asset/bootpag": ">=1.2.0",
               "bower-asset/jquery.lazyload": ">=1.9",
               "bower-asset/dropzone": ">=4.0.1",
+              "bower-asset/nprogress": "*",
               "kartik-v/yii2-helpers": ">=v1.3.6",
               "kartik-v/yii2-detail-view": ">=v1.7.5",
               "kartik-v/yii2-editable": ">=v1.7.4",
@@ -28,8 +29,7 @@
               "akavov/yii2-bootstrap-tokenfield": ">=0.1.0",
               "drsdre/yii2-wizardwidget": ">=1.2.3",
               "unclead/yii2-multiple-input": ">=1.0",
-              "bower-asset/scriptjs": "*",
-              "npm-asset/uglify-js": "*"
+              "bower-asset/scriptjs": "*"
         },
         "extra": {
             "bootstrap": "verbi\\yii2Helpers\\Bootstrap"

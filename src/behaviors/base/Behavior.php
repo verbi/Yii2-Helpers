@@ -10,11 +10,17 @@ class Behavior extends \yii\base\Behavior {
     use \verbi\yii2Helpers\traits\ComponentTrait;
     use \verbi\yii2Helpers\traits\BehaviorTrait;
     
+    public $events = [];
+    
     public function attach($owner)
     {
         $this->owner = $owner;
         foreach ($this->events() as $event => $handler) {
             $owner->on($event, is_string($handler) ? [$this, $handler] : $handler);
         }
+    }
+
+    public function events() {
+        return $this->events;
     }
 }

@@ -214,12 +214,16 @@ trait ComponentTrait {
         return null;
     }
 
-    public function getBehaviorByClass($className) {
+    public function getBehaviorsByClass($className) {
         return array_filter(
                 $this->getBehaviors(), function ($e) use (&$className) {
-            return $e instanceof $className;
-        }
+                return $e instanceof $className;
+            }
         );
+    }
+    
+    public function getBehaviorByClass($className) {
+        return $this->getBehaviorsByClass($className);
     }
 
     public function hasBehaviorByClass($className) {

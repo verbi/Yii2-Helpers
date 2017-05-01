@@ -1,6 +1,7 @@
 <?php
 namespace verbi\yii2Helpers;
 
+use Yii;
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
  * @link https://github.com/verbi/Yii2-Helpers/
@@ -27,8 +28,8 @@ class Html extends \kartik\helpers\Html {
         $output = '';
         foreach (Yii::$app->session->getAllFlashes() as $key => $message) {
             $modOptions = $options;
-            $modOptions['class'] = 'alert alert-' . $key . isset($modOptions['class']) ? ' ' . $modOptions['class'] : '';
-            $output.= static::tag('div', $modOptions);
+            $modOptions['class'] = 'alert alert-' . $key . (isset($modOptions['class']) ? ' ' . $modOptions['class'] : '');
+            $output .= static::div($message, $modOptions);
         }
         return $output;
     }

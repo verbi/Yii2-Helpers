@@ -239,7 +239,8 @@ trait ComponentTrait {
                     'behavior' => $behavior,
                 ],
             ]);
-            if(!$this->trigger(self::$EVENT_BEFORE_ATTACH_BEHAVIOR, $event)) {
+            $this->trigger(self::$EVENT_BEFORE_ATTACH_BEHAVIOR, $event);
+            if(!$event->isValid) {
                 return false;
             }
         }

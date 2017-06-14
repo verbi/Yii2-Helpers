@@ -73,4 +73,13 @@ class Html extends \kartik\helpers\Html {
     public static function hidden($text, $options = []) {
         return static::tag('div', $text, array_merge(['hidden'=>'hidden',],$options));
     }
+    
+    public static function translate($message, $options = [], string $source = 'app') {
+        if(is_array($message)) {
+            $v = array_shift($message);
+            $options = array_merge($options, $message);
+            $message = $v;
+        }
+        return Yii::t($source, $message, $options);
+    }
 }

@@ -79,4 +79,15 @@ trait WidgetTrait {
         $script = $this->getPluginScript($name, $element, $callback, $callbackCon);
         $this->registerWidgetJs($script);
     }
+    
+    public function __construct($config = [])
+    {
+        $behaviors = [];
+        if(isset($config['behaviors']) && is_array($config['behaviors'])) {
+            $behaviors = $config['behaviors'];
+            unset($config['behaviors']);
+        }
+        parent::__construct($config);
+        $this->attachBehaviors($behaviors);
+    }
 }

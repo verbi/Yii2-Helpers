@@ -87,7 +87,22 @@ trait WidgetTrait {
             $behaviors = $config['behaviors'];
             unset($config['behaviors']);
         }
-        parent::__construct($config);
+        
+//        if(isset($config['attributes'])) {
+//            $this->attributes = $config['attributes'];
+//        }
+        
+//        die(print_r($config,true));
+//        try {
+            parent::__construct($config);
+//        }
+//        catch(\yii\base\InvalidConfigException $e) {
+////            die(print_r($config['attributes'],true));
+//            $this->attributes = $config['attributes'];
+////            die(print_r($this->attributes,true));
+//            $this->init();
+////            die(print_r($config['attributes'],true));
+//        }
         $this->attachBehaviors($behaviors);
     }
 }

@@ -24,6 +24,13 @@ class AccessControl extends YiiAccessControl {
                 $rules[$id] = $this->generateRule($id);
             }
         }
+        if($this->owner->hasMethod('loadModel')) {
+            foreach($this->owner->loadModel()->getBehaviors() as $behavior) {
+                if($behavior->hasMethod('addAuthRules')) {
+                    $behavior->addAuthRules($this->owner);
+                }
+            }
+        }
         return $rules;
     }
 
@@ -32,6 +39,9 @@ class AccessControl extends YiiAccessControl {
                     'allow' => true,
                     'actions' => [$actionId],
                     'roles' => [$this->owner->className() . '-' . $actionId],
+                    'roleParams' => function() {
+                        return ['model' => $this->owner->loadModel($this->owner->getPkFromRequest())];
+                    }
         ]));
     }
 

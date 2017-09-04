@@ -1,7 +1,7 @@
 <?php
 namespace verbi\yii2Helpers\widgets;
 
-
+use verbi\yii2Helpers\events\GeneralFunctionEvent;
 
 /**
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -10,6 +10,9 @@ namespace verbi\yii2Helpers\widgets;
  */
 class ListView extends \yii\widgets\ListView {
     use \verbi\yii2Helpers\traits\WidgetTrait;
+    
+    public static $EVENT_BEFORE_RENDER_ITEM = 'beforeRenderItem';
+    
     public $pager = [
         'class' => '\verbi\yii2Helpers\widgets\LinkPager',
     ];
@@ -24,7 +27,79 @@ class ListView extends \yii\widgets\ListView {
         self::$restItemView = $restItemView;
     }
     
+    public $events = [];
+    
     public $restUrl;
+    
+//    public function renderItems()
+//    {
+//        $models = $this->dataProvider->getModels();
+//        $this->eventAfterGetModels(&$models);
+//        return parent::renderItems();
+//    }
+//    
+//    protected function eventAfterGetModels($models) {
+//        $event = new GeneralFunctionEvent();
+//        $event->setParams(['models'=>$models]);
+//        $this->trigger(static::$EVENT_AFTER_GET_MODELS,$event);
+//    }
+    
+    
+//    
+//    /**
+//     * Renders all data models.
+//     * @return string the rendering result
+//     */
+//    public function renderItems()
+//    {
+//        $models = $this->dataProvider->getModels();
+////        $models =& $models2;
+//        $keys = $this->dataProvider->getKeys();
+//        $rows = [];
+//        foreach (array_values($models) as $index => &$model) {
+//            $key = $keys[$index];
+//            if (($before = $this->renderBeforeItem($model, $key, $index)) !== null) {
+//                $rows[] = $before;
+//            }
+//            $rows[] = $this->renderItem($model, $key, $index);
+//            if (($after = $this->renderAfterItem($model, $key, $index)) !== null) {
+//                $rows[] = $after;
+//            }
+//        }
+//        return implode($this->separator, $rows);
+//    }
+//    
+//    protected function renderBeforeItem(&$model, $key, $index)
+//    {
+//        return self::renderBeforeItem($model, $key, $index);
+//    }
+    
+    public function init()
+    {
+        parent::init();
+        $this->initEvents();
+    }
+
+    protected function initEvents() {
+        foreach($this->events as $name => $function) {
+            $this->on($name, $function);
+        }
+    }
+    
+    public function renderItem($model, $key, $index)
+    {
+        if($this->beforeRenderItem($model)) {
+            return parent::renderItem($model, $key, $index);
+        }
+        return false;
+    }
+    
+    protected function beforeRenderItem(&$model) {
+        $event = new GeneralFunctionEvent();
+        $event->setParams(['model' => &$model]);
+        $this->trigger(static::$EVENT_BEFORE_RENDER_ITEM,$event);
+        return $event->isValid;
+    }
     
     public static function widget($config = [])
     {

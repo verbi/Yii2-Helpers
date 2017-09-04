@@ -9,6 +9,8 @@ class AccessControl extends YiiAccessControl {
 
     use \verbi\yii2Helpers\traits\BehaviorTrait;
 
+    protected $_request;
+    
     public function attach($owner) {
         parent::attach($owner);
         if (!sizeof($this->rules)) {
@@ -44,5 +46,28 @@ class AccessControl extends YiiAccessControl {
                     }
         ]));
     }
+    
+    protected function getRequest() {
+        
+        if($this->_request === null)
+        {
+            $this->_request = clone Yii::$app->getRequest();
+        }
+        return $this->_request;
+    }
 
+    public function checkAccess($action, $params, $method = 'get')
+    {
+        $user = $this->user;
+        $request = clone Yii::$app->getRequest();
+//        $request->method = $method;
+        $request->setQueryParams ( $params );
+        /* @var $rule AccessRule */
+        foreach ($this->rules as $rule) {
+            if ($rule->allows($action, $user, $request)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

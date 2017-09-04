@@ -1,4 +1,4 @@
-  <style>
+<style type="text/css">
     html, body {
       height: 100%;
     }

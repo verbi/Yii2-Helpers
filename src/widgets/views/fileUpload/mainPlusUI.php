@@ -3,12 +3,74 @@
 use verbi\yii2Helpers\Html;
 use verbi\yii2Helpers\widgets\ListView;
 use yii\data\DataProviderInterface;
-use yii\base\DynamicModel;
-use yii\base\Object;
-use yii\di\NotInstantiableException;
-use verbi\yii2Helpers\events\GeneralFunctionEvent;
-use verbi\yii2Helpers\behaviors\fileUpload\FileUploadModelBehavior;
+use verbi\yii2Helpers\widgets\Pjax;
+
 $context = $this->context;
+
+$js = '';
+
+$enablePjax = true;
+if (isset($context->enablePjax)) {
+    $enablePjax = $context->enablePjax;
+}
+if ($enablePjax) {
+    $pjaxConfig = [];
+    if (isset($context->reloadTime)) {
+        $pjaxConfig['reloadTime'] = $context->reloadTime;
+    }
+    $pjax = Pjax::begin($pjaxConfig);
+    $context->clientOptions['done'] = new \yii\web\JsExpression('function (e, data) {'
+            // refresh Pjax of files
+            . '$.pjax.reload({container:"#' . $pjax->id . '"})'
+            . '}');
+
+//        $context->clientOptions['add'] = new \yii\web\JsExpression('function (e, data) {'
+//                . 'if (e.isDefaultPrevented()) {'
+//                    . 'return false;'
+//                . '}'
+//                . (isset($context->options['multiple']) && $context->options['multiple'] === false
+//                ?'$(\'#' . $pjax->id . ' div.files div\').remove();':'')
+//                . 'var $this = $(this),'
+//                    . 'that = $this.data(\'blueimp-fileupload\') ||'
+//                        . '$this.data(\'fileupload\'),'
+//                    . 'options = that.options;'
+//                . 'data.context = that._renderUpload(data.files)'
+//                    . '.data(\'data\', data)'
+//                    . '.addClass(\'processing\');'
+//                . 'options.filesContainer['
+//                    . 'options.prependFiles ? \'prepend\' : \'append\''
+//                . '](data.context);'
+//                . 'that._forceReflow(data.context);'
+//                . 'that._transition(data.context);'
+//                . 'data.process(function () {'
+//                    . 'return $this.fileupload(\'process\', data);'
+//                . '}).always(function () {'
+//                    . 'data.context.each(function (index) {'
+//                        . '$(this).find(\'.size\').text('
+//                            . 'that._formatFileSize(data.files[index].size)'
+//                        . ');'
+//                    . '}).removeClass(\'processing\');'
+//                    . 'that._renderPreviews(data);'
+//                . '}).done(function () {'
+//                    . 'data.context.find(\'.start\').prop(\'disabled\', false);'
+//                    . 'if ((that._trigger(\'added\', e, data) !== false) &&'
+//                            . '(options.autoUpload || data.autoUpload) &&'
+//                            . 'data.autoUpload !== false) {'
+//                        . 'data.submit();'
+//                    . '}'
+//                .'}).fail(function () {'
+//                    . 'if (data.files.error) {'
+//                        . 'data.context.each(function (index) {'
+//                            . 'var error = data.files[index].error;'
+//                            . 'if (error) {'
+//                                . '$(this).find(\'.error\').text(error);'
+//                            . '}'
+//                        . '});'
+//                    . '}'
+//                . '});'
+//            . '}');
+
+}
 ?>
 <div class="row fileupload-buttonbar">
     <div class="col-lg-7">
@@ -47,11 +109,13 @@ $context = $this->context;
 </div>
 <div class="files">
     <?php
-    
-    if($context->files instanceof DataProviderInterface) {
-        echo ListView::widget([
+    if ($context->files instanceof DataProviderInterface) {
+        echo Html::div(ListView::widget([
             'dataProvider' => $context->files,
             'itemView' => 'file_list_view',
+            'viewParams' => [
+                'controller' => $context->controller,
+            ],
             'summary' => '',
 //            'events' => [
 //                ListView::$EVENT_BEFORE_RENDER_ITEM => function ( GeneralFunctionEvent $event ) {
@@ -78,9 +142,9 @@ $context = $this->context;
 ////                    $event->params['model'] =& $model;
 //                }
 //            ],
-        ]);
+        ]),['class'=>'preloaded']);
     }
-    
+
 //    foreach ($context->files as $file) {
 //        echo Html::div(
 //                Html::div(Html::tag('span', Html::a(Html::img($file['thumbnailUrl'])
@@ -120,3 +184,11 @@ $context = $this->context;
 //    }
     ?>
 </div>
+<?php
+if ($enablePjax) {
+    Pjax::end();
+}
+
+if ($js) {
+    $pjax->view->registerJs($js);
+}

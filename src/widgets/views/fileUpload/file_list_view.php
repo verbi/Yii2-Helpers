@@ -5,6 +5,8 @@ use yii\base\DynamicModel;
 use yii\base\Object;
 use yii\di\NotInstantiableException;
 use verbi\yii2Helpers\behaviors\fileUpload\FileUploadModelBehavior;
+use verbi\yii2Helpers\widgets\assets\fileUpload\FileUploadListViewItemAsset;
+
 
 if (is_array($model)) {
     $model = new DynamicModel($model);
@@ -26,9 +28,10 @@ if (!sizeof($behaviors)) {
 }
 
 
-
+$action = $controller->createAction('delete');
 echo Html::div(
-        Html::div(Html::tag('span', Html::a(Html::img($model->getThumbnailUrl())
+        Html::div(Html::tag('span', Html::a(Html::img($controller->getActionUrl($controller->createAction('thumbnail'))//array_merge(['']/*$model->getThumbnailUrl()*/,['t' => time()])
+                )
                                 , $model['url']
                                 , [
                             'title' => $model['name'],
@@ -56,8 +59,13 @@ echo Html::div(
                 Html::tag('span', $model->getSize(), ['class' => 'size'])
                 , ['class' => 'col-md-2'])
         . Html::div(
-                Html::tag('button', Html::tag('i', '', ['class' => 'glyphicon glyphicon-trash'])
+                Html::a( Html::tag('i', '', ['class' => 'glyphicon glyphicon-trash'])
                         . Html::tag('span', Yii::t('verbi', 'Delete'))
-                        , [ 'class' => 'btn btn-primary delete',])
+                        , $controller->getActionUrl($action)
+                        , [ 'class' => 'btn btn-primary delete','data' => [
+                                'confirm'=>'test',
+                                'method' => $controller->getMethodsForAction($action)
+                            ]])
                 , ['class' => 'col-md-3'])
         , ['class' => 'row template-download']);
+$this->registerAssetBundle(FileUploadListViewItemAsset::className());

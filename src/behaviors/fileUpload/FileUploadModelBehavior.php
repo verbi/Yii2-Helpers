@@ -8,12 +8,17 @@ use \verbi\yii2Helpers\behaviors\base\Behavior;
  * @license https://opensource.org/licenses/GPL-3.0
 */
 class FileUploadModelBehavior extends Behavior {
-    public $thumbnailUrl;
+    public $thumbnailUrl = [];
+    public $deleteUrl = [];
     public $url;
     public $name;
     
     public function getThumbnailUrl() {
         return $this->owner->thumbnailUrl;
+    }
+    
+    public function getDeleteUrl() {
+        return $this->owner->deleteUrl;
     }
     
     public function getSize() {

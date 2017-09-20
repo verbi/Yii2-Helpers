@@ -16,6 +16,9 @@ trait ComponentTrait {
     static $EVENT_BEFORE_MAGIC_SET = '_beforeMagicSet';
     static $EVENT_BEFORE_ATTACH_BEHAVIOR = '_beforeAttachBehavior';
     static $EVENT_AFTER_ATTACH_BEHAVIOR = '_afterAttachBehavior';
+    static $EVENT_AFTER_ENSURE_BEHAVIORS = '_afterEnsureBehaviors';
+    
+    protected $__behaviorsEnsured;
     
     public function __uses() {
         return class_uses(self::ClassName());
@@ -154,6 +157,28 @@ trait ComponentTrait {
         }
         return false;
     }
+    
+    public function behaviorsAreEnsured() {
+        if($this->__behaviorsEnsured === null) {
+            $ref = new \ReflectionProperty(\yii\base\Component::className(), "_behaviors");
+            $ref->setAccessible(true);
+            $this->__behaviorsEnsured = ($ref->getValue($this) !== null);
+        }
+        return $this->__behaviorsEnsured;
+    }
+    
+    /**
+     * @inheritdoc
+     */
+    public function ensureBehaviors()
+    {
+        if (!$this->behaviorsAreEnsured()) {
+            parent::ensureBehaviors();
+            $this->__behaviorsEnsured = true;
+            $event = new GeneralFunctionEvent();
+            $this->trigger(static::$EVENT_AFTER_ENSURE_BEHAVIORS, $event);
+        }
+    }
 
     public function isPublicProperty($name) {
         $reflect = new \ReflectionClass($this);
@@ -239,14 +264,14 @@ trait ComponentTrait {
                     'behavior' => $behavior,
                 ],
             ]);
-            $this->trigger(self::$EVENT_BEFORE_ATTACH_BEHAVIOR, $event);
+            $this->trigger(static::$EVENT_BEFORE_ATTACH_BEHAVIOR, $event);
             if(!$event->isValid) {
                 return false;
             }
         }
         $result = parent::attachBehavior($name, $behavior);
         if ($this->hasMethod('trigger')) {
-            $this->trigger(self::$EVENT_AFTER_ATTACH_BEHAVIOR, $event);
+            $this->trigger(static::$EVENT_AFTER_ATTACH_BEHAVIOR, $event);
         }
         return $result;
     }

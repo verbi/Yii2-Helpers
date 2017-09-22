@@ -12,17 +12,20 @@ use verbi\yii2Helpers\traits\ComponentTrait;
 class AccessControl extends YiiAccessControl {
     use \verbi\yii2Helpers\traits\BehaviorTrait {
         events as traitEvents;
-        attach as traitAttach;
+//        attach as traitAttach;
     }
     
     const EVENT_BEFORE_GENERATE_RULES = 'before_generate_rules';
     const EVENT_AFTER_GENERATE_RULES = 'after_generate_rules';
+    const EVENT_GENERATE_RULES = 'event_generate_rules';
+    const EVENT_GENERATE_AUTH_RULES = 'event_generate_auth_rules';
 
     public $ruleConfig = ['class' => 'verbi\yii2Helpers\behaviors\base\filters\AccessRule'];
     
     protected $_request;
-    public $generateRules;
     
+    public $generateRules = true;
+    public $generateAuthRules = true;
     
     public function events() {
         return array_merge(
@@ -33,13 +36,16 @@ class AccessControl extends YiiAccessControl {
         );
     }
     
-    public function attach($owner) {
-        $this->traitAttach($owner);
-        if ($this->generateRules !== false && !sizeof($this->rules)) {
-            $this->generateRules = true;
-            $this->rules = $this->generateRules();
-        }
-    }
+//    public function attach($owner) {
+//        $this->traitAttach($owner);
+////        if ($this->generateAuthRules) {
+////            $this->rules = $this->generateAuthRules();
+////        }
+////        if ($this->generateRules !== false && !sizeof($this->rules)) {
+////            $this->generateRules = true;
+////            $this->rules = $this->generateRules();
+////        }
+//    }
     
     protected function _isEnsured() {
         if(!$this->owner instanceof ComponentTrait) {
@@ -49,12 +55,20 @@ class AccessControl extends YiiAccessControl {
     }
     
     public function afterAttach($event) {
-        if($this->generateRules === true && $this->_isEnsured()) {
-            $behavior = $event->data['behavior'];
-            if($behavior && $behavior !== $this) {
-                $this->rules = $this->getRulesFromBehavior($behavior, $this->rules);
-            }
+        if ($this->generateAuthRules) {
+            $this->rules = $this->generateAuthRules();
         }
+        if ($this->generateRules !== false && !sizeof($this->rules)) {
+            $this->generateRules = true;
+            $this->rules = $this->generateRules();
+        }
+        
+//        if($this->generateRules === true && $this->_isEnsured()) {
+//            $behavior = $event->data['behavior'];
+//            if($behavior && $behavior !== $this) {
+//                $this->rules = $this->getRulesFromBehavior($behavior, $this->rules);
+//            }
+//        }
     }
     
     public function afterEnsureBehaviors($event) {
@@ -62,25 +76,50 @@ class AccessControl extends YiiAccessControl {
             $this->generateRules();
         }
     }
+    
+    protected function generateAuthRules() {
+        if($this->owner->hasMethod('loadModel')) {
+            $event = new GeneralFunctionEvent;
+            $event->setParams([
+                'accessControl' => $this,
+            ]);
+            $this->owner->loadModel()->trigger(self::EVENT_GENERATE_AUTH_RULES,$event);
+        }
+    }
 
     protected function generateRules() {
+        $rules = $this->rules;
         $event = new GeneralFunctionEvent;
+        $event->setParams([
+            'rules' => &$rules,
+        ]);
         $this->owner->trigger(self::EVENT_BEFORE_GENERATE_RULES, $event);
         if (!$event->isValid) {
-            return $event->getReturnValue() === null ? [] : $event->getReturnValue();
+            return $event->getReturnValue() === null ? $rules : $event->getReturnValue();
         }
-        $rules = [];
+        
         if ($this->owner->hasMethod('getActions')) {
             $actionIds = array_keys($this->owner->getActions());
             foreach ($actionIds as $id) {
                 $rules[$id] = $this->generateRule($id);
             }
         }
-//        if($this->owner->hasMethod('loadModel')) {
+        if($this->owner->hasMethod('loadModel')) {
+            $event = new GeneralFunctionEvent;
+            $event->setParams([
+                'rules' => &$rules,
+                'accessControl' => $this,
+            ]);
+            $this->owner->loadModel()->trigger(self::EVENT_GENERATE_RULES,$event);
+            if($event->isValid) {
+                if($event->hasReturnValue()) {
+                    $rules = $event->getReturnValue();
+                }
+            }
 //            foreach($this->owner->loadModel()->getBehaviors() as $behavior) {
 //                $rules = $this->getRulesFromBehavior($behavior, $rules);
 //            }
-//        }
+        }
         
         $event = new GeneralFunctionEvent;
         $event->setParams([
@@ -93,15 +132,15 @@ class AccessControl extends YiiAccessControl {
         return $rules;
     }
     
-    protected function getRulesFromBehavior($behavior, $rules) {
-        if($behavior->hasMethod('addAuthRules')) {
-            $behavior->addAuthRules($this->owner);
-        }
-        if($behavior->hasMethod('getAccessRules')) {
-            $rules = array_merge($rules,$behavior->getAccessRules($this));
-        }
-        return $rules;
-    }
+//    protected function getRulesFromBehavior($behavior, $rules) {
+//        if($behavior->hasMethod('addAuthRules')) {
+//            $behavior->addAuthRules($this->owner);
+//        }
+//        if($behavior->hasMethod('getAccessRules')) {
+//            $rules = array_merge($rules,$behavior->getAccessRules($this));
+//        }
+//        return $rules;
+//    }
 
     protected function generateRule($actionId) {
         return Yii::createObject(array_merge($this->ruleConfig, [

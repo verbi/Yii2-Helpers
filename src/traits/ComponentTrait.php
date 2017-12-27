@@ -287,4 +287,13 @@ trait ComponentTrait {
         }
         return null;
     }
+    
+    public static function className(bool $short = false) {
+        $className = parent::className();
+        if($short) {
+            $explodedClassName = explode('\\',$className);
+            $className = end($explodedClassName);
+        }
+        return $className;
+    }
 }

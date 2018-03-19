@@ -83,7 +83,8 @@ function PjaxDynamicScriptLoader() {
 
     this.pjaxEndEvent = function (e) {
         try {
-            $(e.target).find('.js-pjax-scripts').each(function (index, element) {
+            var $target = $(e.target);
+            $target.find('.js-pjax-scripts').each(function (index, element) {
                 var positions = JSON.parse($(element).html());
 
                 if (positions.cssFiles) {
@@ -108,6 +109,8 @@ function PjaxDynamicScriptLoader() {
 
 
             });
+//            $target.find('input:first').focus();
+            alert($target.find('input[type=text]:first').val());
         }
         catch (e) {
             console.log(e);

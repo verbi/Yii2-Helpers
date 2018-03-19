@@ -130,6 +130,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
             if ($relation instanceof ActiveQueryInterface) {
                 if (is_array($value)) {
                     $relationClassName = $relation->modelClass;
+//                    die($relationModel->className(true));
                     if ($relation->via === null) {
                         $viaRelation = $relation;
                     } elseif (is_array($relation->via)) {
@@ -142,6 +143,10 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                         $viaRelation = $relation->via;
                         $viaTable = reset($relation->via->from);
                     }
+//                    if($name=='recipeTags')
+//                    {
+//                        die((string)$relation->multiple);
+//                    }
                     if ($relation->multiple) {
                         $relationModel = new $relationClassName();
                         $primaryKeyKeys = array_keys($relationModel->getPrimaryKey(true));
@@ -154,8 +159,10 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                             return $value->getPrimaryKey(true);
                         }, $foundModels);
                         $models = $value;
+                        
                         array_walk($models, function(&$var) use ($relationClassName, $viaRelation, &$foundModels, &$foundPrimaryKeys, &$primaryKeyKeys) {
                             if(is_array($var) || !is_object($var)) {
+                                
                                 $relationModel = new $relationClassName();
                                 if (is_array($var)) {
                                     $searchResult = array_search(array_filter($var, function($key) use (&$primaryKeyKeys) {
@@ -172,11 +179,44 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                                             $relationModel->$relationKey = $this->owner->$primaryKey;
                                         });
                                     }
+//                                    die(print_r($relationModel->className(true),true));
+//                                    if($name=='recipeTags') {
+//                                        die( print_r( $var, true ) );
+//                                    }
                                     $relationModel->setAttributes($var);
                                     $var = $relationModel;
                                 } elseif (!is_object($var)) {
+//                                    if($relationClassName=='app\modules\recipe\models\RecipeTag') {
+//                                        die(print_r($var,true));
+//                                    }
+                                    
+                                    
+                                    
+                                    
+                                    
+//                                    die(print_r(array_column($foundModels,'primaryKey'),true));
+                                    
                                     $searchResult = array_search($var, array_column($foundModels,'primaryKey'));
-                                    if ($searchResult !== false) {
+                                    if ($searchResult === false) {
+                                        $attributeNames = array_keys(
+                                                $relationModel->getAttributes(
+                                                        null,
+                                                        //array_merge(
+                                                        //    $relationModel->primaryKey(),
+                                                        array_keys($viaRelation->link)
+                                                )
+                                        );
+                                        $attributeName = array_shift(
+                                                $attributeNames
+                                        );
+//                                        die($attributeName);
+                                        $searchResult = array_search($var, array_column($foundModels,$attributeName));
+                                        if ($searchResult !== false) {
+                                            $relationModel = $foundModels[$searchResult];
+                                        }
+//                                        $attributeName = $var;
+                                    }
+                                    else {
                                         $relationModel = $foundModels[$searchResult];
                                     }
                                     if($relationModel->hasMethod('loadBySingleValue')) {
@@ -210,6 +250,7 @@ class RelationHandlerBehavior extends \verbi\yii2Helpers\behaviors\base\Behavior
                                 $relationModel->$relationKey = $this->owner->$primaryKey;
                             });
                         }
+                        
                         $relationModel->setAttributes($value);
                         $this->_related[$name] = $relationModel;
                         return;

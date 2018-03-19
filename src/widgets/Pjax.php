@@ -141,16 +141,16 @@ class Pjax extends \yii\widgets\Pjax {
     }
 
     protected function renderPjaxEndHtml() {
-        $array = [];
         if ($this->requiresPjax()) {
             foreach (array_keys($this->assetBundles) as $bundle) {
                 $this->registerAssetFiles($bundle);
             }
             $this->view->trigger(self::EVENT_END_PJAX_HTML, new GeneralFunctionEvent(['sender' => $this]));
-            $array = $this->_getAssetsArray();
+            if($array = $this->_getAssetsArray()) {
+                return Html::hidden(json_encode($array, true), ['class' => 'hidden js-pjax-scripts']);
+            }
         }
-        $content = sizeof($array) ?Html::hidden(json_encode($array, true), ['class' => 'hidden js-pjax-scripts']):'';
-        return $content;
+        return '';
     }
 
     public function clear() {

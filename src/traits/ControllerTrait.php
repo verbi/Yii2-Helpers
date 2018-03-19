@@ -1,7 +1,8 @@
 <?php
 namespace verbi\yii2Helpers\traits;
-use \yii\web\BadRequestHttpException;
 
+use \yii\web\BadRequestHttpException;
+use yii\web\NotFoundHttpException;
 
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
@@ -73,5 +74,29 @@ trait ControllerTrait {
         $this->actionParams = $actionParams;
         return $args;
     }
-
+    
+    public function getPkFromRequest() {
+        $modelClass = $this->modelClass;
+        $pk = [];
+        foreach ($modelClass::primaryKey(true) as $key) {
+            $val = \Yii::$app->request->get($key,\Yii::$app->request->post($key));
+            if($val === null) {
+                return null;
+            }
+            $pk[$key] = $val;
+        }
+        return $pk;
+    }
+    
+    public function loadModel($id = null) {
+        $modelClass = $this->modelClass;
+        if ($id!==null) {
+            $model = $modelClass::findOne($id);
+            if ($model === null) {
+                throw new NotFoundHttpException;
+            }
+            return $model;
+        }
+        return new $modelClass;
+    }
 }

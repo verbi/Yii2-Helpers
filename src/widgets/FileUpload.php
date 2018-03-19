@@ -131,7 +131,6 @@ class FileUpload extends JQueryFileUpload {
      */
     public function registerClientScript()
     {
-        die('ok');
         $view = $this->getView();
         switch ($this->appearance) {
             case 'ui':

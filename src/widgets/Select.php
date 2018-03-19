@@ -16,6 +16,7 @@ class Select extends Select2 {
     public $placeholder;
     
     public static function widget($config = []) {
+       
         if(!\yii::$app->user->isGuest && isset($config['pluginOptions']) && isset($config['pluginOptions']['ajax'])) {
             if(!isset($config['pluginOptions']['ajax']['headers']) && !isset($config['pluginOptions']['ajax']['headers']['Authorization'])) {
                 $config['pluginOptions']['ajax']['headers']['Authorization'] = new JsExpression(
@@ -27,6 +28,8 @@ class Select extends Select2 {
             $config['pluginOptions']['placeholder'] = $config['placeholder'];
             unset($config['placeholder']);
         }
+       
+        
         return parent::widget($config);
     }
     

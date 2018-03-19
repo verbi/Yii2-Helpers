@@ -1,11 +1,15 @@
 <?php
 
 namespace verbi\yii2Helpers\widgets;
+
+use Yii;
+
 /*
  * @author Philip Verbist <philip.verbist@gmail.com>
  * @link https://github.com/verbi/Yii2-Helpers/
  * @license https://opensource.org/licenses/GPL-3.0
-*/
+ */
+
 class ActiveForm extends \yii\widgets\ActiveForm {
 
     public $fieldClass = 'verbi\yii2Helpers\widgets\ActiveField';
@@ -25,6 +29,14 @@ class ActiveForm extends \yii\widgets\ActiveForm {
             unset($config['restOptions']);
             //die();
         }
+//        $regenerateCsrf = true;
+//        if (isset($config['regenerate_csrf'])) {
+//            $regenerateCsrf = $config['regenerate_csrf'];
+//            unset($config['regenerate_csrf']);
+//        }
+//        if ($regenerateCsrf) {
+//            Yii::$app->getRequest()->getCsrfToken(true);
+//        }
         $form = parent::begin($config);
 
         if ($restOptions['itemView'] && isset($restOptions['ajaxOptions']['url']) && $restOptions['ajaxOptions']['url']) {
@@ -50,4 +62,5 @@ class ActiveForm extends \yii\widgets\ActiveForm {
         }
         return $form;
     }
+
 }

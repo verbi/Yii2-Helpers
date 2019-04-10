@@ -30,7 +30,9 @@
               "drsdre/yii2-wizardwidget": "*",
               "unclead/yii2-multiple-input": "*",
               "bower-asset/scriptjs": "*",
-              "2amigos/yii2-ckeditor-widget" : "*"
+              "2amigos/yii2-ckeditor-widget" : "*",
+	      "kartik-v/yii2-krajee-base": "v1.9.9"
+
         },
         "extra": {
             "bootstrap": "verbi\\yii2Helpers\\Bootstrap"
